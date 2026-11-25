@@ -1,0 +1,39 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}{{ cfg.title }}{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Website content</span>
+    <h1>{{ cfg.title }}</h1>
+    <p style="color:var(--muted);margin:6px 0 0">{{ cfg.help }}</p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    {% if cfg.can_add %}<a class="btn btn-dark" href="{% url 'content_new' section %}">Add {{ cfg.singular }}</a>{% endif %}
+  </div>
+</div>
+
+{% if rows %}
+  <div class="panel table-wrap">
+    <table>
+      <thead><tr>{% for label in columns %}<th>{{ label }}</th>{% endfor %}<th>Actions</th></tr></thead>
+      <tbody>
+        {% for obj, values in rows %}
+          <tr>
+            {% for value in values %}<td>{{ value }}</td>{% endfor %}
+            <td style="white-space:nowrap">
+              <a class="btn btn-light btn-sm" href="{% url 'content_edit' section obj.pk %}">Edit</a>
+              <form class="inline-form" method="post" action="{% url 'content_delete' section obj.pk %}"
+                    onsubmit="return confirm('Delete this item? This cannot be undone.');">
+                {% csrf_token %}<button class="btn btn-danger btn-sm" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="empty">Nothing here yet.{% if cfg.can_add %} <a class="linkish" href="{% url 'content_new' section %}">Add the first one</a>.{% endif %}</div>
+{% endif %}
+{% endblock %}

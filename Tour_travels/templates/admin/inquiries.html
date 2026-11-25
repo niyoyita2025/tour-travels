@@ -1,0 +1,45 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Contact messages{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div><span class="kicker">Operations</span><h1>Contact messages &amp; enquiries</h1></div>
+</div>
+
+<div class="filter-bar" style="grid-template-columns:auto 1fr;justify-content:start">
+  <div class="field" style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="btn {% if state == 'open' %}btn-dark{% else %}btn-light{% endif %} btn-sm" href="{% url 'admin_inquiries' %}?state=open">Open</a>
+    <a class="btn {% if state == 'resolved' %}btn-dark{% else %}btn-light{% endif %} btn-sm" href="{% url 'admin_inquiries' %}?state=resolved">Resolved</a>
+    <a class="btn {% if state == 'all' %}btn-dark{% else %}btn-light{% endif %} btn-sm" href="{% url 'admin_inquiries' %}?state=all">All</a>
+  </div>
+</div>
+
+{% if page.object_list %}
+  <div class="stack">
+    {% for inquiry in page %}
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <strong>{{ inquiry.name }}</strong>
+            <span class="status {% if inquiry.is_resolved %}completed{% else %}pending{% endif %}" style="margin-left:6px">{% if inquiry.is_resolved %}Resolved{% else %}Open{% endif %}</span>
+            <br><small><a href="mailto:{{ inquiry.email }}">{{ inquiry.email }}</a>{% if inquiry.phone %} · {{ inquiry.phone }}{% endif %} · {{ inquiry.created_at|date:"j M Y, H:i" }}</small>
+            <br><small>Interested in: {{ inquiry.package.title|default:"not specified" }}</small>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
+            <a class="btn btn-light btn-sm" href="mailto:{{ inquiry.email }}?subject=Your%20enquiry%20to%20Explore%20Rwanda">Reply by email</a>
+            {% if inquiry.is_resolved %}
+              <form class="inline-form" method="post" action="{% url 'admin_inquiry_reopen' inquiry.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-light btn-sm" type="submit">Reopen</button></form>
+            {% else %}
+              <form class="inline-form" method="post" action="{% url 'admin_inquiry_resolve' inquiry.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-dark btn-sm" type="submit">Mark resolved</button></form>
+            {% endif %}
+          </div>
+        </div>
+        <p style="margin:12px 0 0">{{ inquiry.message|linebreaksbr }}</p>
+      </div>
+    {% endfor %}
+  </div>
+  {% include '_pagination.html' %}
+{% else %}
+  <div class="empty">No messages in this list.</div>
+{% endif %}
+{% endblock %}

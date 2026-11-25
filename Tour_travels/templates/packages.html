@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Book a tour{% endblock %}
+{% block meta_description %}Book a local guided tour in Kigali and Rwanda. Choose a date, a starting time, the hours you want and your destination.{% endblock %}
+{% block body_attrs %}class="page-tours"{% endblock %}
+
+{% block content %}
+<section class="tour-hero has-bg"{% if backgrounds.tours_page %} style="background-image:linear-gradient(120deg,rgba(18,61,50,.9),rgba(18,61,50,.7)),url('{{ backgrounds.tours_page }}')"{% endif %}><div class="container">
+  <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / Tours</div>
+  <span class="tour-eyebrow">Book a tour</span>
+  <h1>Tours and open dates</h1>
+  <p>Pick a tour, see its next open date, then choose your starting time and how many hours on the calendar. Prices are per guest in USD.</p>
+  <a class="btn btn-primary" href="#tour-list">Book Now</a>
+</div></section>
+
+<section class="tour-section" id="tour-list"><div class="container">
+  {% if category_chips %}
+    <nav class="cat-chips" aria-label="Filter tours by category">
+      <a class="cat-chip{% if not active_category %} is-active{% endif %}" href="{% url 'packages' %}#tour-list">All tours</a>
+      {% for cat in category_chips %}
+        <a class="cat-chip{% if active_category.pk == cat.pk %} is-active{% endif %}" href="?category={{ cat.pk }}#tour-list"{% if active_category.pk == cat.pk %} aria-current="true"{% endif %}>
+          {{ cat.name }} <span class="cat-count">{{ cat.tour_count }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+  {% endif %}
+
+  <form class="tour-filter" method="get" action="{% url 'packages' %}#tour-list" role="search">
+    <div class="field"><label for="{{ form.q.id_for_label }}">Search</label>{{ form.q }}</div>
+    <div class="field"><label for="{{ form.category.id_for_label }}">Category</label>{{ form.category }}</div>
+    <div class="field"><label for="{{ form.min_price.id_for_label }}">Min price</label>{{ form.min_price }}</div>
+    <div class="field"><label for="{{ form.max_price.id_for_label }}">Max price</label>{{ form.max_price }}</div>
+    <div class="field"><label for="{{ form.sort.id_for_label }}">Sort by</label>{{ form.sort }}</div>
+    <button class="btn btn-dark" type="submit">Apply</button>
+  </form>
+  {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors.0 }}</div>{% endif %}
+
+  {% if page.object_list %}
+    <div class="tour-grid">{% for package in page %}{% include '_package_card.html' %}{% endfor %}</div>
+    {% include '_pagination.html' %}
+  {% else %}
+    <div class="empty">No tours match these filters. <a class="linkish" href="{% url 'packages' %}#tour-list">Clear filters</a> or <a class="linkish" href="{% url 'contact' %}">ask us to plan one</a>.</div>
+  {% endif %}
+</div></section>
+{% endblock %}

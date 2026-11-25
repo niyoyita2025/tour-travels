@@ -1,0 +1,5 @@
+{% comment %}
+  A round avatar: the profile photo when there is one, otherwise the person's initials.
+  Pass photo, initials and size (sm, md, lg or xl). The photo is square and is cropped to a circle, so it never stretches.
+{% endcomment %}
+<span class="avatar avatar-{{ size|default:'md' }}" aria-hidden="true">{% if photo %}<img src="{{ photo }}" alt="" loading="lazy" decoding="async">{% else %}{{ initials|default:'?' }}{% endif %}</span>

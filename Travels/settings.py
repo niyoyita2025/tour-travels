@@ -1,0 +1,191 @@
+"""
+Django settings for the Travels project (Explore Rwanda tour website).
+
+Sensitive values are read from environment variables. See .env.example.
+"""
+
+import os
+from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def env_bool(name, default=False):
+    return os.environ.get(name, str(default)).strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def env_list(name, default=''):
+    return [item.strip() for item in os.environ.get(name, default).split(',') if item.strip()]
+
+
+def load_dotenv(path):
+    """Read KEY=VALUE lines from a .env file into os.environ. Variables already set win."""
+    try:
+        lines = path.read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, _, value = line.partition('=')
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in '"\'':
+            value = value[1:-1]
+        os.environ.setdefault(key.strip(), value)
+
+
+# Local settings (including the Gmail app password) live in Travels/.env, which is never committed.
+load_dotenv(BASE_DIR / '.env')
+
+DEBUG = env_bool('DJANGO_DEBUG', True)
+
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured('Set DJANGO_SECRET_KEY when DJANGO_DEBUG is off.')
+    # Development-only key. Never used when DJANGO_DEBUG is off.
+    SECRET_KEY = 'dev-only-key-change-me-for-production-use-env-var'
+
+ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,[::1]')
+CSRF_TRUSTED_ORIGINS = env_list('DJANGO_CSRF_TRUSTED_ORIGINS')
+
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'Tour_travels',
+]
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+ROOT_URLCONF = 'Travels.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'Tour_travels.context_processors.site_settings',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'Travels.wsgi.application'
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+     'OPTIONS': {'min_length': 8}},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'home'
+# Sign in with a username or with the email address the account was registered with.
+AUTHENTICATION_BACKENDS = ['Tour_travels.backends.EmailOrUsernameBackend']
+# Password reset links sent by administrators (and their tokens) expire after this many minutes.
+PASSWORD_RESET_TIMEOUT = 60 * int(os.environ.get('PASSWORD_RESET_MINUTES', '60'))
+
+# Six-digit email codes for sign-up verification and forgot-password.
+OTP_LIFETIME_SECONDS = 5 * 60            # a code expires after 5 minutes
+OTP_RESEND_SECONDS = 60                  # wait this long before a new code can be requested
+OTP_MAX_ATTEMPTS = 5                     # wrong entries before a code is locked
+PASSWORD_RESET_CHOOSE_SECONDS = 10 * 60  # time to choose a new password once the code is accepted
+
+
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'Africa/Kigali'
+USE_I18N = True
+USE_TZ = True
+
+
+STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
+
+EMAIL_BACKEND = os.environ.get(
+    'DJANGO_EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend',
+)
+# Gmail SMTP. EMAIL_HOST_PASSWORD must be a Google "app password", never the normal Gmail password.
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = env_bool('EMAIL_USE_TLS', True)
+EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '20'))  # seconds before a send is reported as failed
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Explore Rwanda <noreply@example.com>')
+SITE_NAME = 'Explore Rwanda with a Local Guide'
+SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
+
+# Booking calendar policy
+BOOKING_HOLD_HOURS = int(os.environ.get('BOOKING_HOLD_HOURS', '48'))  # pending requests keep seats this long
+CANCELLATION_NOTICE_HOURS = int(os.environ.get('CANCELLATION_NOTICE_HOURS', '48'))  # cancel up to this long before a tour
+LIMITED_SEATS_THRESHOLD = int(os.environ.get('LIMITED_SEATS_THRESHOLD', '3'))  # yellow when this few seats remain
+
+# Each destination gets a bookable tour automatically. These set how that tour starts.
+AUTO_TOUR_PRICE = os.environ.get('AUTO_TOUR_PRICE', '20.00')  # USD per guest; edit the tour afterwards if needed
+AUTO_TOUR_MAX_GUESTS = int(os.environ.get('AUTO_TOUR_MAX_GUESTS', '8'))
+AUTO_TOUR_CAPACITY = int(os.environ.get('AUTO_TOUR_CAPACITY', '8'))  # seats per open date
+AUTO_TOUR_DAYS_AHEAD = int(os.environ.get('AUTO_TOUR_DAYS_AHEAD', '30'))  # open dates kept this many days ahead
+AUTO_TOUR_START_TIME = os.environ.get('AUTO_TOUR_START_TIME', '09:00')
+# Contact details, WhatsApp number, payment instructions and the staff
+# notification email are managed in the staff dashboard (Website content).
+
+
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = 'same-origin'
+    X_FRAME_OPTIONS = 'DENY'
+    # Render (and most hosts) terminate HTTPS in front of Django and forward the original scheme in this header.
+    # Without it, Django sees plain HTTP and the SSL redirect below would loop forever.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Set DJANGO_SECURE_SSL_REDIRECT=1 in production once HTTPS is in place.
+    SECURE_SSL_REDIRECT = env_bool('DJANGO_SECURE_SSL_REDIRECT', False)
+    SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', '0'))
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

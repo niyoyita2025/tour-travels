@@ -1,0 +1,107 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="{% block meta_description %}Discover Kigali and experience Rwanda with a friendly local guide. Explore culture, history, markets and beautiful city views.{% endblock %}">
+  <meta name="theme-color" content="#123d32">
+  <title>{% block title %}{{ site_name }}{% endblock %} | {{ site_name }}</title>
+  {# Choose the theme before the page paints, so there is no flash: saved choice, else the device setting. #}
+  <script>
+    (function () {
+      var theme = 'light';
+      try {
+        var saved = localStorage.getItem('er-theme');
+        if (saved === 'dark' || saved === 'light') {
+          theme = saved;
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+      } catch (e) { /* storage blocked: keep the light theme */ }
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+  <link rel="stylesheet" href="{% static 'css/sections.css' %}">
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body {% block body_attrs %}{% endblock %}>
+  {% block header %}
+  <div class="topbar"><div class="container"><span>🇷🇼 Welcome to the Land of a Thousand Hills</span><span>Local experiences · Kigali, Rwanda</span></div></div>
+
+  {% block nav %}
+  <nav class="nav" aria-label="Main">
+    <div class="container navinner">
+      <a class="brand" href="{% url 'home' %}"><span class="brandmark">R</span><span>{{ site_name|truncatechars:24 }}<small>with a local guide</small></span></a>
+      <div class="links" id="navLinks">
+        <a href="{% url 'destinations' %}" class="nav-destinations" {% if request.resolver_match.url_name == 'destinations' or request.resolver_match.url_name == 'destination_detail' %}aria-current="page"{% endif %}>Destinations</a>
+        <a href="{% url 'packages' %}" class="nav-tours" {% if request.resolver_match.url_name == 'packages' or request.resolver_match.url_name == 'package_detail' or request.resolver_match.url_name == 'tour_calendar' %}aria-current="page"{% endif %}>Tours</a>
+        <a href="{% url 'faq' %}" {% if request.resolver_match.url_name == 'faq' %}aria-current="page"{% endif %}>FAQ</a>
+        <a href="{% url 'about' %}" {% if request.resolver_match.url_name == 'about' %}aria-current="page"{% endif %}>About</a>
+        <a href="{% url 'details' %}" {% if request.resolver_match.url_name == 'details' %}aria-current="page"{% endif %}>Details</a>
+        <a href="{% url 'contact' %}" {% if request.resolver_match.url_name == 'contact' %}aria-current="page"{% endif %}>Contact</a>
+        {# Phones hide the header buttons, so the same actions appear in the menu. #}
+        <div class="mobile-auth">
+          {% if user.is_authenticated %}
+            <a class="btn btn-dark btn-sm" href="{{ dash_home }}">{% if is_admin_user %}Admin dashboard{% else %}My account{% endif %}</a>
+            <form method="post" action="{% url 'logout' %}" class="inline-form">{% csrf_token %}<button class="btn btn-light btn-sm" type="submit">Log out</button></form>
+          {% else %}
+            <a class="btn btn-dark btn-sm" href="{% url 'register' %}">Sign up</a>
+            <a class="btn btn-light btn-sm" href="{% url 'login' %}">Log in</a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="nav-actions">
+        {% include '_language_picker.html' %}
+        <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to dark mode" title="Dark or light mode">
+          <span aria-hidden="true">🌙</span>
+        </button>
+        {% if user.is_authenticated %}
+          <a class="me-chip" href="{% url 'profile' %}" title="My profile: {{ me_name }}" aria-label="My profile: {{ me_name }}">{% include '_avatar.html' with photo=me_photo initials=me_initials size='sm' %}</a>
+          <a class="btn btn-dark btn-sm" href="{{ dash_home }}">{% if is_admin_user %}Admin dashboard{% else %}My account{% endif %}</a>
+          <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-light btn-sm" type="submit">Log out</button></form>
+        {% else %}
+          <a class="btn btn-light btn-sm" href="{% url 'login' %}">Log in</a>
+          <a class="btn btn-dark btn-sm" href="{% url 'register' %}">Sign up</a>
+        {% endif %}
+      </div>
+      <button class="menu" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+    </div>
+  </nav>
+  {% endblock %}
+  {% endblock %}
+
+  <main>
+    {% if messages %}
+      <div class="container messages" role="status">
+        {% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer %}{% include '_footer.html' %}{% endblock %}
+
+  {# Google Translate: the official language selector. It runs in the visitor's browser. #}
+  <script>
+    function erTranslateInit() {
+      if (window.google && google.translate && google.translate.TranslateElement) {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,rw,fr,sw',
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false
+        }, 'google_translate_element');
+      }
+    }
+  </script>
+  <script src="https://translate.google.com/translate_a/element.js?cb=erTranslateInit" defer></script>
+  <script src="{% static 'js/site.js' %}"></script>
+  <script src="{% static 'js/password-toggle.js' %}" defer></script>
+  <script src="{% static 'js/language.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

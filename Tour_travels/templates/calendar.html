@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Choose a date · {{ package.title }}{% endblock %}
+{% block meta_description %}Check availability and book {{ package.title }} on the live booking calendar.{% endblock %}
+
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/calendar.css' %}">{% endblock %}
+
+{% block content %}
+<section class="page-hero"><div class="container">
+  <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / <a href="{% url 'packages' %}">Tours</a> / <a href="{{ package.get_absolute_url }}">{{ package.title }}</a> / Booking calendar</div>
+  <h1>Choose your date</h1>
+  <p>{{ package.title }} · USD {{ package.price }} per guest · up to {{ package.max_guests }} guests</p>
+</div></section>
+
+<section class="page-section"><div class="container cal-layout">
+  <div>
+    <div class="cal-instructions">
+      <strong>How to book:</strong> 1) choose a green or yellow date, 2) pick a time, 3) enter your details.
+      Red dates are fully booked and grey dates are not available. No account is needed to look.
+    </div>
+
+    <div class="cal-legend" aria-label="Colour key">
+      <span><i class="sw sw-available"></i> Available</span>
+      <span><i class="sw sw-limited"></i> Limited seats or pending</span>
+      <span><i class="sw sw-full"></i> Fully booked</span>
+      <span><i class="sw sw-none"></i> Past or not offered</span>
+    </div>
+
+    <div class="cal-card cal-month" id="calendar"
+         data-availability-url="{{ availability_url }}" data-month="{{ cal.month_key }}">
+      <div class="cal-nav">
+        {% if cal.can_go_back %}
+          <a class="btn btn-light btn-sm" href="?month={{ cal.prev }}">← Previous</a>
+        {% else %}
+          <span class="btn btn-light btn-sm is-disabled" aria-disabled="true">← Previous</span>
+        {% endif %}
+        <h2>{{ cal.month_label }}</h2>
+        <a class="btn btn-light btn-sm" href="?month={{ cal.next }}">Next →</a>
+      </div>
+
+      <div class="cal-grid cal-head" aria-hidden="true">
+        {% for name in weekday_names %}<div>{{ name }}</div>{% endfor %}
+      </div>
+
+      {% for week in cal.weeks %}
+        <div class="cal-grid" style="margin-top:6px">
+          {% for day in week %}
+            {% if not day.in_month %}
+              <div class="cal-day is-outside" aria-hidden="true"><span class="d">{{ day.day }}</span></div>
+            {% elif day.status == 'available' or day.status == 'limited' %}
+              <a class="cal-day day-{{ day.status }}{% if day.is_today %} is-today{% endif %}{% if selected_day and selected_day.iso == day.iso %} is-selected{% endif %}"
+                 href="?month={{ cal.month_key }}&amp;date={{ day.iso }}" data-date="{{ day.iso }}" data-href="?month={{ cal.month_key }}&amp;date={{ day.iso }}"
+                 aria-label="{{ day.date|date:'j F' }}: {{ day.label }}, {{ day.remaining }} seats left">
+                <span class="d">{{ day.day }}</span>
+                <span class="meta">{{ day.remaining }} seat{{ day.remaining|pluralize }} left</span>
+              </a>
+            {% else %}
+              <a class="cal-day day-{{ day.status }}{% if day.is_today %} is-today{% endif %} is-disabled"
+                 data-date="{{ day.iso }}" data-href="?month={{ cal.month_key }}&amp;date={{ day.iso }}" aria-disabled="true"
+                 aria-label="{{ day.date|date:'j F' }}: {{ day.label }}">
+                <span class="d">{{ day.day }}</span>
+                <span class="meta">{% if day.status == 'full' %}Fully booked{% else %}{{ day.label }}{% endif %}</span>
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <p class="cal-updated"><span class="live-dot" aria-hidden="true"></span>Live availability · <span id="cal-updated">Loaded just now</span></p>
+    </div>
+  </div>
+
+  <aside>
+    {% if selected_day %}
+      <div class="cal-card">
+        <h3>{{ selected_day.date|date:"l j F Y" }}</h3>
+        <p>{{ selected_day.label }} · {{ selected_day.remaining }} of {{ selected_day.capacity }} seats left</p>
+        <ul class="slot-list">
+          {% for slot in selected_day.slots %}
+            <li class="slot{% if not slot.bookable %} is-disabled{% endif %}" data-slot-id="{{ slot.id }}">
+              <div>
+                <strong>{{ slot.time }}</strong>
+                <small> · <span data-slot-remaining>{{ slot.remaining }}</span> of {{ slot.capacity }} seats left</small>
+                <div class="slot-note" data-slot-note>{% if slot.bookable %}{% elif slot.started %}Already started{% elif slot.closed %}Closed for booking{% else %}Fully booked{% endif %}</div>
+              </div>
+              {% if slot.bookable %}
+                <a class="btn btn-dark btn-sm" data-slot-book href="{{ slot.book_url }}">Book this time</a>
+              {% endif %}
+            </li>
+          {% empty %}
+            <li class="slot-note">No times are offered on this date.</li>
+          {% endfor %}
+        </ul>
+        <p class="slot-note">On the next step you choose how many guests to book, up to the seats left.</p>
+      </div>
+    {% else %}
+      <div class="cal-card">
+        <h3>Pick a date</h3>
+        <p>Select a green or yellow date on the calendar to see its times and the seats left.</p>
+      </div>
+    {% endif %}
+
+    <div class="cal-card">
+      <h3>Good to know</h3>
+      <p>Your booking is a request. We confirm availability and price with you by email.</p>
+      <p>A pending request holds its seats for {{ hold_hours }} hours. If it is not confirmed in that time, the seats are released.</p>
+      <p>You can cancel up to {{ cancel_hours }} hours before the tour starts.</p>
+    </div>
+  </aside>
+</div></section>
+<script src="{% static 'js/calendar.js' %}"></script>
+{% endblock %}

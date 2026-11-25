@@ -1,0 +1,33 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Create administrator{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Customers &amp; staff</span>
+    <h1>Create an administrator account</h1>
+  </div>
+</div>
+
+<div class="layout-2">
+  <div class="form-card">
+    <h2>New administrator</h2>
+    <p>The new account can sign in at the administrator sign-in page and manage the whole website. Only share this form with people you trust.</p>
+    <form method="post" action="{% url 'admin_create' %}" novalidate>
+      {% csrf_token %}
+      <div class="form-grid">{% include '_form_fields.html' %}</div>
+      <div class="form-foot"><button class="btn btn-dark" type="submit">Create administrator</button></div>
+    </form>
+  </div>
+  <div class="panel">
+    <h2>Good to know</h2>
+    <ul class="highlight-list">
+      <li>Clients cannot create administrator accounts. Only administrators can.</li>
+      <li>Use a strong password of at least 8 characters.</li>
+      <li>You can remove administrator access later from the customer's account page.</li>
+      <li>Administrators see every booking, payment and enquiry.</li>
+    </ul>
+    <p style="margin-top:14px"><a class="linkish" href="{% url 'admin_customers' %}">← Back to customer accounts</a></p>
+  </div>
+</div>
+{% endblock %}

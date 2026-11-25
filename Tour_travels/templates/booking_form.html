@@ -1,0 +1,41 @@
+{% extends layout %}
+{% block title %}Book {{ package.title }}{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'tour_calendar' package.slug %}?date={{ schedule.date|date:'Y-m-d' }}">← Back to the calendar</a></span>
+    <h1>Complete your booking</h1>
+    <p style="color:var(--muted);margin:6px 0 0">{{ package.title }} · USD {{ package.price }} per guest</p>
+  </div>
+</div>
+
+<div class="layout-2">
+  <div class="form-card">
+    <h2>Your details</h2>
+    <p>Fields marked * are required. Your account details are filled in where we have them.</p>
+    <form method="post" action="{% url 'book_package' package.slug %}" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="schedule" value="{{ schedule.pk }}">
+      <div class="form-grid">{% include '_form_fields.html' %}</div>
+      <div class="form-foot">
+        <button class="btn btn-dark" type="submit">Submit booking request</button>
+        <small>Your booking is a request. We confirm availability and price by email. Pending requests hold their seats for {{ hold_hours }} hours.</small>
+      </div>
+    </form>
+  </div>
+
+  <aside class="panel">
+    <h2>Your selected date</h2>
+    <dl class="summary-list">
+      <div><dt>Tour</dt><dd>{{ package.title }}</dd></div>
+      <div><dt>Date</dt><dd>{{ schedule.date|date:"l j F Y" }}</dd></div>
+      <div><dt>Time</dt><dd>{{ schedule.start_time|time:"H:i" }}</dd></div>
+      <div><dt>Seats left</dt><dd>{{ schedule.seats_remaining }} of {{ schedule.capacity }}</dd></div>
+      <div><dt>Price</dt><dd>USD {{ package.price }} per guest</dd></div>
+    </dl>
+    <p class="notice" style="margin-top:16px">No payment is needed to submit this request. Payment is arranged directly with the tour operator{% if site.payment_phone %} on <strong>{{ site.payment_phone }}</strong>{% endif %}.</p>
+    <p class="notice" style="margin-top:12px">If the date fills up before you submit, we will tell you and you can choose another.</p>
+  </aside>
+</div>
+{% endblock %}

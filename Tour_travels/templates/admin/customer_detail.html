@@ -1,0 +1,81 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}{{ customer.username }}{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'admin_customers' %}">Customer accounts</a> / {{ customer.username }}</span>
+    <h1>{{ customer.get_full_name|default:customer.username }}</h1>
+    <p style="margin:6px 0 0">
+      <span class="pill{% if customer.is_staff %} gold{% endif %}">{% if customer.is_staff %}Administrator{% else %}Client{% endif %}</span>
+      <span class="status {% if customer.is_active %}confirmed{% else %}cancelled{% endif %}">{% if customer.is_active %}Active{% else %}Deactivated{% endif %}</span>
+    </p>
+  </div>
+</div>
+
+<div class="layout-2">
+  <div class="stack">
+    <div class="form-card">
+      <h2>Account details</h2>
+      <form method="post" action="{% url 'admin_customer_detail' customer.pk %}" novalidate>
+        {% csrf_token %}
+        <div class="form-grid">
+          {% include '_form_fields.html' with form=form %}
+          {% include '_form_fields.html' with form=profile_form %}
+        </div>
+        <div class="form-foot"><button class="btn btn-dark" type="submit">Save account</button></div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>Bookings ({{ bookings|length }})</h2>
+      {% if bookings %}
+        <div class="table-wrap"><table>
+          <thead><tr><th>Reference</th><th>Tour</th><th>Date</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for booking in bookings %}
+              <tr>
+                <td><a class="linkish" href="{{ booking.get_absolute_url }}">{{ booking.reference }}</a></td>
+                <td>{{ booking.package.title }}</td>
+                <td>{{ booking.travel_date|date:"j M Y" }}</td>
+                <td>USD {{ booking.total_price }}</td>
+                <td><span class="status {{ booking.status }}">{{ booking.get_status_display }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table></div>
+      {% else %}
+        <p style="color:var(--muted)">This customer has no bookings.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel quick-links">
+      <h2>Actions</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin:-8px 0 4px">Joined {{ customer.date_joined|date:"j M Y" }} · {{ review_count }} review{{ review_count|pluralize }} · last sign-in {{ customer.last_login|date:"j M Y"|default:"never" }}</p>
+
+      <form method="post" action="{% url 'admin_customer_reset' customer.pk %}" style="margin:0">
+        {% csrf_token %}
+        <button class="btn btn-light btn-block" type="submit" style="justify-content:space-between;width:100%">Email a password reset link <span>→</span></button>
+      </form>
+
+      {% if customer.pk != request.user.pk %}
+        {% if customer.is_staff %}
+          <form method="post" action="{% url 'admin_customer_role' customer.pk %}" onsubmit="return confirm('Remove administrator access? They will become a client account.');" style="margin:0">
+            {% csrf_token %}<input type="hidden" name="action" value="revoke">
+            <button class="btn btn-danger btn-block" type="submit" style="width:100%">Remove administrator access</button>
+          </form>
+        {% else %}
+          <form method="post" action="{% url 'admin_customer_role' customer.pk %}" onsubmit="return confirm('Give this account full administrator access?');" style="margin:0">
+            {% csrf_token %}<input type="hidden" name="action" value="grant">
+            <button class="btn btn-dark btn-block" type="submit" style="width:100%">Make administrator</button>
+          </form>
+        {% endif %}
+      {% else %}
+        <p class="notice">This is your own account. You cannot change your own role or deactivate it.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

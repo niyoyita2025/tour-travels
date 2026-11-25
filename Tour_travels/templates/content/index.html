@@ -1,0 +1,26 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Website content{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div><span class="kicker">Website content</span><h1>Manage what customers see</h1></div>
+</div>
+<p style="color:var(--muted);margin-top:-10px">Changes go live as soon as you save them.</p>
+
+<div class="card-grid three" style="margin-top:24px">
+  <a class="card" style="padding:22px" href="{% url 'site_settings' %}">
+    <span class="tag">Pages, contact and settings</span>
+    <h3 style="margin:6px 0;color:var(--forest)">Site text, images and contact details</h3>
+    <p style="color:var(--muted);font-size:.9rem">Hero, intro, culture note, about page, booking and closing text, contact details, WhatsApp, payment instructions and the staff notification email.</p>
+    <span class="linkish">Edit site settings →</span>
+  </a>
+  {% for item in sections %}
+    <a class="card" style="padding:22px" href="{% url 'content_list' item.key %}">
+      <span class="tag">{{ item.count }} item{{ item.count|pluralize }}</span>
+      <h3 style="margin:6px 0;color:var(--forest)">{{ item.title }}</h3>
+      <p style="color:var(--muted);font-size:.9rem">{{ item.help }}</p>
+      <span class="linkish">Manage →</span>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

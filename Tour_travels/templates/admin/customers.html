@@ -1,0 +1,46 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Customer accounts{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div><span class="kicker">Customers &amp; staff</span><h1>Customer accounts</h1></div>
+  <a class="btn btn-dark" href="{% url 'admin_create' %}">Create administrator</a>
+</div>
+
+<form method="get" action="{% url 'admin_customers' %}" class="filter-bar" style="grid-template-columns:2fr 1fr auto">
+  <div class="field"><label for="q">Search</label><input class="input" id="q" name="q" value="{{ q }}" placeholder="Name, username or email"></div>
+  <div class="field"><label for="role">Role</label>
+    <select class="input" id="role" name="role">
+      <option value="">All accounts</option>
+      <option value="client"{% if role == 'client' %} selected{% endif %}>Clients</option>
+      <option value="admin"{% if role == 'admin' %} selected{% endif %}>Administrators</option>
+    </select>
+  </div>
+  <button class="btn btn-dark" type="submit">Filter</button>
+</form>
+
+{% if page.object_list %}
+  <div class="panel table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Bookings</th><th>Joined</th><th>Account</th><th></th></tr></thead>
+      <tbody>
+        {% for account in page %}
+          <tr>
+            <td>{{ account.get_full_name|default:"—" }}</td>
+            <td>{{ account.username }}</td>
+            <td>{{ account.email|default:"—" }}</td>
+            <td><span class="pill{% if account.is_staff %} gold{% endif %}">{% if account.is_staff %}Administrator{% else %}Client{% endif %}</span></td>
+            <td>{{ account.booking_count }}</td>
+            <td>{{ account.date_joined|date:"j M Y" }}</td>
+            <td><span class="status {% if account.is_active %}confirmed{% else %}cancelled{% endif %}">{% if account.is_active %}Active{% else %}Deactivated{% endif %}</span></td>
+            <td><a class="btn btn-light btn-sm" href="{% url 'admin_customer_detail' account.pk %}">Manage</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include '_pagination.html' %}
+{% else %}
+  <div class="empty">No accounts match these filters.</div>
+{% endif %}
+{% endblock %}

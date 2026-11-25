@@ -1,0 +1,22 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}{% if obj %}Edit {{ cfg.singular }}{% else %}New {{ cfg.singular }}{% endif %}{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'content_list' section %}">← {{ cfg.title }}</a></span>
+    <h1>{% if obj %}Edit {{ cfg.singular }}{% else %}New {{ cfg.singular }}{% endif %}</h1>
+  </div>
+</div>
+<div class="form-card" style="max-width:860px">
+  <p>Fields marked * are required. Leave the slug blank to create it from the name.</p>
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <div class="form-grid">{% include '_form_fields.html' %}</div>
+    <div class="form-foot">
+      <button class="btn btn-dark" type="submit">Save</button>
+      {% if obj %}<small>Changes go live when you save.</small>{% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+{% comment %}
+Shared shell for both dashboards: top bar, sidebar and main area.
+Each role supplies its own sidebar (see admin.html and client.html).
+{% endcomment %}
+
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">{% endblock %}
+{% block body_attrs %}class="has-dashboard"{% endblock %}
+
+{% block header %}
+<header class="dash-topbar">
+  <div class="dash-topbar-inner">
+    <button class="dash-toggle" id="dashToggle" type="button" aria-controls="dashSidebar" aria-expanded="false" aria-label="Open navigation">☰</button>
+    <a class="brand" href="{{ dash_home }}"><span class="brandmark">R</span><span>{{ dash_label }}<small>{{ site_name|truncatechars:30 }}</small></span></a>
+    <div class="dash-topbar-actions">
+      {% include '_language_picker.html' %}
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to dark mode" title="Dark or light mode">
+        <span aria-hidden="true">🌙</span>
+      </button>
+      <a class="dash-me" href="{% url 'profile' %}" title="My profile: {{ me_name }}">{% include '_avatar.html' with photo=me_photo initials=me_initials size='sm' %}<span>{{ me_first }}</span></a>
+      <a class="btn btn-light btn-sm" href="{% url 'home' %}">View website</a>
+      <form class="inline-form" method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-dark btn-sm" type="submit">Log out</button></form>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="dash-shell">
+  <aside class="dash-sidebar" id="dashSidebar">
+    <div class="dash-user">
+      {% include '_avatar.html' with photo=me_photo initials=me_initials size='lg' %}
+      <div>
+        <strong>{{ me_name }}</strong>
+        <small>{{ dash_label }}</small>
+        <a class="dash-user-link" href="{% url 'profile' %}">Edit profile</a>
+      </div>
+    </div>
+    <nav class="dash-nav" aria-label="{{ dash_label }} navigation">
+      {% block sidebar %}{% endblock %}
+    </nav>
+  </aside>
+  <div class="dash-main">
+    {% block dash %}{% endblock %}
+  </div>
+</div>
+{% endblock %}
+

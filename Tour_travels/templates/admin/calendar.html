@@ -1,0 +1,112 @@
+{% extends 'layouts/admin.html' %}
+{% load static %}
+{% block title %}Booking calendar{% endblock %}
+
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/calendar.css' %}">{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Bookings</span>
+    <h1>Booking calendar{% if tour %}: {{ tour.title }}{% endif %}</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Every booking appears on its date. Select a day to see its bookings, times, durations and status.</p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a class="btn btn-light" href="{% url 'admin_schedules' %}">Tour dates &amp; capacity</a>
+    <a class="btn btn-dark" href="{{ bulk_url }}">Add many dates</a>
+  </div>
+</div>
+
+<form method="get" action="{% url 'admin_calendar' %}" class="cal-toolbar">
+  <div class="field" style="min-width:240px"><label for="tour">Tour</label>
+    <select class="input" id="tour" name="tour" onchange="this.form.submit()">
+      <option value="">All tours</option>
+      {% for t in tours %}<option value="{{ t.pk }}"{% if tour and tour.pk == t.pk %} selected{% endif %}>{{ t.title }}</option>{% endfor %}
+    </select>
+  </div>
+  <input type="hidden" name="month" value="{{ cal.month_key }}">
+  <button class="btn btn-light" type="submit">Apply</button>
+</form>
+
+<div class="layout-2">
+  <div class="cal-card cal-month">
+    <div class="cal-nav">
+      <a class="btn btn-light btn-sm" href="?{% if tour %}tour={{ tour.pk }}&amp;{% endif %}month={{ cal.prev }}">← Previous</a>
+      <h2>{{ cal.month_label }}</h2>
+      <a class="btn btn-light btn-sm" href="?{% if tour %}tour={{ tour.pk }}&amp;{% endif %}month={{ cal.next }}">Next →</a>
+    </div>
+    <div class="cal-legend">
+      <span><i class="sw sw-available"></i> Available</span>
+      <span><i class="sw sw-limited"></i> Limited or pending</span>
+      <span><i class="sw sw-full"></i> Fully booked</span>
+      <span><i class="sw sw-none"></i> Past or not offered</span>
+    </div>
+    <div class="cal-grid cal-head" aria-hidden="true">{% for name in weekday_names %}<div>{{ name }}</div>{% endfor %}</div>
+    {% for week in cal.weeks %}
+      <div class="cal-grid" style="margin-top:6px">
+        {% for day in week %}
+          {% if day.in_month %}
+            <a class="cal-day day-{{ day.status }}{% if day.is_today %} is-today{% endif %}{% if selected_day and selected_day.iso == day.iso %} is-selected{% endif %}"
+               href="?{% if tour %}tour={{ tour.pk }}&amp;{% endif %}month={{ cal.month_key }}&amp;date={{ day.iso }}">
+              <span class="d">{{ day.day }}</span>
+              <span class="meta">{% if day.bookings %}{{ day.bookings|length }} booking{{ day.bookings|length|pluralize }}{% else %}{% if day.all_capacity %}{{ day.booked }}/{{ day.all_capacity }} seats{% else %}—{% endif %}{% endif %}</span>
+            </a>
+          {% else %}
+            <div class="cal-day is-outside"><span class="d">{{ day.day }}</span></div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <aside>
+    {% if selected_day %}
+      <div class="panel">
+        <h2>{{ selected_day.date|date:"l j F Y" }}</h2>
+        <p style="color:var(--muted)">{{ selected_day.label }} · {{ selected_day.booked }} of {{ selected_day.all_capacity }} seats booked</p>
+
+        <h3 style="font-size:1rem;margin:14px 0 8px;color:var(--forest)">Bookings</h3>
+        {% for b in selected_day.bookings %}
+          <div class="slot" style="margin-bottom:10px;flex-direction:column;align-items:stretch">
+            <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+              <strong>{{ b.time }} · {{ b.hours }} h</strong>
+              <span class="status {{ b.status }}">{{ b.status_label }}</span>
+            </div>
+            <div><small>{{ b.customer }} · {{ b.guests }} guest{{ b.guests|pluralize }} · {{ b.tour }}</small></div>
+            <div><small>{{ b.email }} · {{ b.phone }} · {{ b.payment }} · {{ b.reference }}</small></div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+              <a class="btn btn-light btn-sm" href="{% url 'admin_booking_edit' b.id %}">Edit</a>
+              {% if b.status == 'pending' %}
+                <form class="inline-form" method="post" action="{% url 'admin_booking_status' b.id %}">{% csrf_token %}<input type="hidden" name="status" value="confirmed"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-dark btn-sm" type="submit">Confirm</button></form>
+              {% endif %}
+              {% if b.status == 'pending' or b.status == 'confirmed' %}
+                <form class="inline-form" method="post" action="{% url 'admin_booking_status' b.id %}" onsubmit="return confirm('Cancel this booking?');">{% csrf_token %}<input type="hidden" name="status" value="cancelled"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-danger btn-sm" type="submit">Cancel</button></form>
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <p style="color:var(--muted)">No bookings on this day yet.</p>
+        {% endfor %}
+
+        <h3 style="font-size:1rem;margin:18px 0 8px;color:var(--forest)">Time slots</h3>
+        {% for slot in selected_day.slots %}
+          <div class="slot" style="margin-bottom:10px">
+            <div>
+              <strong>{{ slot.time }}</strong><br>
+              <small>{{ slot.booked }} of {{ slot.capacity }} booked · {{ slot.remaining }} left{% if slot.pending %} · {{ slot.pending }} pending{% endif %}{% if slot.reserved %} · covered by a longer booking{% endif %}</small>
+            </div>
+            <a class="btn btn-light btn-sm" href="{% url 'admin_schedules' %}?tour={{ tour.pk|default_if_none:'' }}">Manage</a>
+          </div>
+        {% empty %}
+          <p style="color:var(--muted)">No tour dates on this day. <a class="linkish" href="{{ bulk_url }}">Add dates</a>.</p>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="panel">
+        <h2>Pick a day</h2>
+        <p style="color:var(--muted)">Select a date to see its bookings, the times booked, durations and each booking's status.</p>
+      </div>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Frequently asked questions{% endblock %}
+
+{% block content %}
+<section class="page-hero has-bg"{% if backgrounds.faq %} style="background-image:linear-gradient(rgba(18,61,50,.86),rgba(18,61,50,.86)),url('{{ backgrounds.faq }}')"{% endif %}><div class="container">
+  <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / FAQ</div>
+  <h1>Frequently asked questions</h1>
+  <p>Quick answers about booking, payment and planning your visit. Still stuck? <a href="{% url 'contact' %}" style="color:var(--gold)">Contact us</a>.</p>
+</div></section>
+
+<section class="page-section"><div class="container">
+  {% if faqs %}
+    <div class="faq-list">
+      {% for item in faqs %}
+        <details class="faq-item"{% if forloop.first %} open{% endif %}>
+          <summary>{{ item.question }}</summary>
+          <p>{{ item.answer|linebreaksbr }}</p>
+        </details>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">No questions have been added yet. <a class="linkish" href="{% url 'contact' %}">Ask us directly</a>.</div>
+  {% endif %}
+</div></section>
+{% endblock %}

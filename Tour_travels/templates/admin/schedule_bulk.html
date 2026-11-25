@@ -1,0 +1,27 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Add many tour dates{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'admin_schedules' %}">← Tour dates &amp; capacity</a></span>
+    <h1>Add many tour dates</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Create a run of dates in one step, for example every Saturday for three months. Dates that already exist are left unchanged.</p>
+  </div>
+</div>
+
+<div class="layout-2">
+  <div class="form-card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="form-grid">{% include '_form_fields.html' %}</div>
+      <div class="form-foot"><button class="btn btn-dark" type="submit">Create dates</button></div>
+    </form>
+  </div>
+  <aside class="panel">
+    <h2>Example</h2>
+    <p style="color:var(--muted)">Start 1 March, end 31 May, tick Saturday, time 09:00, capacity 12. This creates every Saturday from 1 March to 31 May at 09:00 with 12 seats.</p>
+    <p class="notice">Up to 366 days can be created at a time.</p>
+  </aside>
+</div>
+{% endblock %}

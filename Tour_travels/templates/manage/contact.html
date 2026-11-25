@@ -1,0 +1,40 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Contact details{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Contact &amp; footer</span>
+    <h1>Contact details</h1>
+    <p style="color:var(--muted);margin:6px 0 0">These details appear on the Contact page and in the footer. Every visitor message is also saved under Contact messages.</p>
+  </div>
+  <a class="btn btn-light" href="{% url 'content_list' 'contact_details' %}">Other contact details →</a>
+</div>
+
+<div class="layout-2">
+  <form class="form-card" method="post" action="{% url 'contact_manage' %}" novalidate>
+    {% csrf_token %}
+    <h2>Main contact details</h2>
+    <div class="form-grid">{% include '_form_fields.html' %}</div>
+    <div class="form-foot">
+      <button class="btn btn-dark" type="submit">Save contact details</button>
+      <small>WhatsApp: digits only in international format, for example 250788000000. The link opens a chat with that number.</small>
+    </div>
+  </form>
+
+  <aside class="panel">
+    <h2>Shown on your website</h2>
+    <ul class="highlight-list">
+      <li>Contact page: the introduction, phone, email, address, WhatsApp and any other contact details.</li>
+      <li>Footer: phone, email, address and WhatsApp.</li>
+      <li>Booking and payment pages: the payment phone number.</li>
+    </ul>
+    <h3 style="margin-top:18px;font-size:1rem;color:var(--forest)">Other contact details now</h3>
+    {% for detail in extra_contacts %}
+      <div class="notif"><strong>{{ detail.get_kind_display }}{% if detail.label %} · {{ detail.label }}{% endif %}</strong><small>{{ detail.value }}{% if not detail.is_active %} · hidden{% endif %}</small></div>
+    {% empty %}
+      <p style="color:var(--muted)">None yet. <a class="linkish" href="{% url 'content_new' 'contact_details' %}">Add one</a>.</p>
+    {% endfor %}
+  </aside>
+</div>
+{% endblock %}

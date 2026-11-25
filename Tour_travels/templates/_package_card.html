@@ -1,0 +1,31 @@
+<article class="tour-card">
+  <a class="tour-card-img" href="{{ package.get_absolute_url }}" aria-label="View {{ package.title }}"{% if package.photo_url %} style="background-image:url('{{ package.photo_url }}')"{% endif %}>
+    {% if package.category %}<span class="tour-cat-badge">{{ package.category.name }}</span>{% endif %}
+  </a>
+  <div class="tour-card-body">
+    <h3><a href="{{ package.get_absolute_url }}">{{ package.title }}</a></h3>
+    <p class="tour-summary">{{ package.summary }}</p>
+    <div class="tour-facts">
+      <span>{{ package.duration_days }} day{{ package.duration_days|pluralize }}</span>
+      <span>Up to {{ package.max_guests }} guests</span>
+      {% if package.review_count %}<span class="rating">★ {{ package.average_rating }} ({{ package.review_count }})</span>{% endif %}
+    </div>
+
+    <div class="tour-next">
+      {% if package.next_slot %}
+        <span class="slot-chip{% if package.next_status == 'limited' %} is-limited{% endif %}">Next: {{ package.next_slot.date|date:"D j M" }} at {{ package.next_slot.start_time|time:"H:i" }} · {{ package.next_slot.seats_remaining }} seat{{ package.next_slot.seats_remaining|pluralize }} left</span>
+      {% else %}
+        <span class="slot-chip is-full">No open dates right now</span>
+      {% endif %}
+    </div>
+
+    <div class="tour-card-foot">
+      <span class="tour-price">USD {{ package.price }} <small>/ guest</small></span>
+      {% if package.next_slot %}
+        <a class="btn btn-primary btn-sm" href="{% url 'tour_calendar' package.slug %}?date={{ package.next_slot.date|date:'Y-m-d' }}">Book Now</a>
+      {% else %}
+        <a class="btn btn-light btn-sm" href="{% url 'tour_calendar' package.slug %}">Check dates</a>
+      {% endif %}
+    </div>
+  </div>
+</article>

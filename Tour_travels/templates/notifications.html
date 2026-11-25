@@ -1,0 +1,46 @@
+{% extends layout %}
+{% block title %}Notifications{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Inbox</span>
+    <h1>Notifications</h1>
+    <p style="color:var(--muted);margin:6px 0 0">{% if is_admin_user %}Bookings, payments and enquiries that need attention.{% else %}Booking confirmations, status changes and payment updates.{% endif %}</p>
+  </div>
+  {% if unread_count %}
+    <form class="inline-form" method="post" action="{% url 'notifications_read_all' %}">{% csrf_token %}<button class="btn btn-light" type="submit">Mark all as read ({{ unread_count }})</button></form>
+  {% endif %}
+</div>
+
+{% if broadcast_form %}
+  <div class="panel">
+    <h2>Send a notification to all clients</h2>
+    <p style="color:var(--muted);font-size:.9rem">For announcements such as a closed day or a new tour. It appears in every client's notifications.</p>
+    <form method="post" action="{% url 'admin_broadcast' %}" novalidate>
+      {% csrf_token %}
+      <div class="form-grid">{% include '_form_fields.html' with form=broadcast_form %}</div>
+      <div class="form-foot"><button class="btn btn-dark" type="submit">Send to all clients</button></div>
+    </form>
+  </div>
+{% endif %}
+
+<div class="panel">
+  {% for item in page %}
+    <div class="notif {% if not item.is_read %}unread{% endif %}">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <strong>{{ item.title }}</strong>
+        <small style="color:var(--muted)">{{ item.created_at|date:"j M Y, H:i" }}</small>
+      </div>
+      {% if item.message %}<p>{{ item.message }}</p>{% endif %}
+      <form class="inline-form" method="post" action="{% url 'notification_read' item.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-light btn-sm" type="submit">{% if item.link %}Open{% else %}Mark as read{% endif %}</button>
+      </form>
+    </div>
+  {% empty %}
+    <p style="color:var(--muted)">No notifications yet.</p>
+  {% endfor %}
+  {% include '_pagination.html' %}
+</div>
+{% endblock %}

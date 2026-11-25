@@ -1,0 +1,36 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Details page{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Website pages</span>
+    <h1>Details page</h1>
+    <p style="color:var(--muted);margin:6px 0 0">The main page for extra information. Add photos, recommended books, useful links and other sections below.</p>
+  </div>
+  <a class="btn btn-light" href="{% url 'details' %}">View page</a>
+</div>
+
+<div class="layout-2">
+  <form class="form-card" method="post" action="{% url 'details_manage' %}" novalidate>
+    {% csrf_token %}
+    <h2>Page content</h2>
+    <div class="form-grid">{% include '_form_fields.html' %}</div>
+    <div class="form-foot">
+      <button class="btn btn-dark" type="submit">Save Details page</button>
+      <small>{% if page.is_published %}Visible to visitors.{% else %}Hidden: visitors see a "not found" page until you publish it.{% endif %}</small>
+    </div>
+  </form>
+
+  <aside class="panel">
+    <h2>Content on this page</h2>
+    <div class="stat-grid" style="grid-template-columns:1fr 1fr;margin-bottom:0">
+      <a class="stat" href="{% url 'content_list' 'detail_photos' %}" style="text-decoration:none"><span>Gallery photos</span><strong>{{ counts.photos }}</strong></a>
+      <a class="stat" href="{% url 'content_list' 'detail_books' %}" style="text-decoration:none"><span>Books</span><strong>{{ counts.books }}</strong></a>
+      <a class="stat" href="{% url 'content_list' 'detail_links' %}" style="text-decoration:none"><span>Useful links</span><strong>{{ counts.links }}</strong></a>
+      <a class="stat" href="{% url 'content_list' 'detail_sections' %}" style="text-decoration:none"><span>Sections</span><strong>{{ counts.sections }}</strong></a>
+    </div>
+    <p style="margin-top:14px;color:var(--muted);font-size:.9rem">Each item can be added, edited, hidden or deleted from its list. Hidden items do not appear on the public page.</p>
+  </aside>
+</div>
+{% endblock %}

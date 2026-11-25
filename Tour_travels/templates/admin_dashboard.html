@@ -1,0 +1,203 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Control Panel{% endblock %}
+
+{% block dash %}
+<div class="cp-hero">
+  <div>
+    <span class="kicker">Control Panel</span>
+    <h1>Manage your whole website from here</h1>
+    <p>Bookings, the calendar, tours, pages, images, contact details, social media and sign-in. Every change you save appears on the public website straight away.</p>
+  </div>
+  <div class="cp-hero-actions">
+    <a class="btn btn-primary" href="{% url 'admin_bookings' %}">Bookings</a>
+    <a class="btn btn-outline" href="{% url 'admin_calendar' %}">Calendar</a>
+    <a class="btn btn-outline" href="{% url 'home' %}">View website</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat"><span>Bookings today</span><strong>{{ bookings_today }}</strong></div>
+  <div class="stat"><span>Awaiting confirmation</span><strong>{{ pending_bookings }}</strong></div>
+  <div class="stat"><span>Seats booked (upcoming)</span><strong>{{ upcoming_seats_booked }}</strong></div>
+  <div class="stat"><span>Recorded payments</span><strong>USD {{ recorded_total }}</strong></div>
+  <div class="stat"><span>Open messages</span><strong>{{ open_inquiry_count }}</strong></div>
+  <div class="stat"><span>Pending holds</span><strong>{{ pending_holds }}</strong></div>
+  <div class="stat"><span>Clients</span><strong>{{ client_count }}</strong></div>
+  <div class="stat"><span>Administrators</span><strong>{{ admin_count }}</strong></div>
+</div>
+
+<div class="cp-grid">
+  <section class="cp-card">
+    <div class="cp-card-head"><span class="cp-icon">📅</span><div><h2>Booking Management</h2><p>Reservations and booking calendars</p></div></div>
+    <ul>
+      <li><a href="{% url 'admin_bookings' %}">All bookings</a><small>view, edit, confirm, cancel</small></li>
+      <li><a href="{% url 'admin_calendar' %}">Booking calendar</a><small>every booking on its date</small></li>
+      <li><a href="{% url 'admin_schedules' %}">Tour dates &amp; capacity</a><small>times, seats and open slots</small></li>
+      <li><a href="{% url 'admin_schedule_bulk' %}">Add many dates</a><small>a run of dates in one step</small></li>
+    </ul>
+  </section>
+
+  <section class="cp-card">
+    <div class="cp-card-head"><span class="cp-icon">📍</span><div><h2>Destination Management</h2><p>Places, photos, maps and descriptions</p></div></div>
+    <ul>
+      <li><a href="{% url 'content_list' 'destinations' %}">Destinations</a><small>add, edit, delete, maps and images</small></li>
+      <li><a href="{% url 'content_new' 'destinations' %}">Add a destination</a><small>a new place for visitors</small></li>
+    </ul>
+  </section>
+
+  <section class="cp-card">
+    <div class="cp-card-head"><span class="cp-icon">🧭</span><div><h2>Tour Management</h2><p>Tours, categories, prices and descriptions</p></div></div>
+    <ul>
+      <li><a href="{% url 'content_list' 'tours' %}">Tours</a><small>add, edit, delete, images and prices</small></li>
+      <li><a href="{% url 'content_list' 'categories' %}">Tour categories</a><small>groups shown as chips on the Tours page</small></li>
+      <li><a href="{% url 'content_list' 'reviews' %}">Reviews &amp; ratings</a><small>publish or hide</small></li>
+    </ul>
+  </section>
+
+  <section class="cp-card">
+    <div class="cp-card-head"><span class="cp-icon">🖼️</span><div><h2>Website pages</h2><p>Text, photos and backgrounds</p></div></div>
+    <ul>
+      <li><a href="{% url 'background_manage' %}">Background images</a><small>one photo per section</small></li>
+      <li><a href="{% url 'site_settings' %}">Home page text</a><small>banner, intro, closing text</small></li>
+      <li><a href="{% url 'about_manage' %}">About page</a><small>text and sections with photos</small></li>
+      <li><a href="{% url 'details_manage' %}">Details page</a><small>gallery, books, links, sections</small></li>
+      <li><a href="{% url 'content_list' 'faqs' %}">FAQs</a><small>any questions and answers</small></li>
+      <li><a href="{% url 'content_list' 'culture' %}">Culture cards</a><small>home page cards</small></li>
+    </ul>
+  </section>
+
+  <section class="cp-card">
+    <div class="cp-card-head"><span class="cp-icon">📞</span><div><h2>Contact &amp; social</h2><p>How people reach you</p></div></div>
+    <ul>
+      <li><a href="{% url 'contact_manage' %}">Contact details</a><small>phone, email, address, WhatsApp</small></li>
+      <li><a href="{% url 'content_list' 'contact_details' %}">Other contact details</a><small>extra lines and offices</small></li>
+      <li><a href="{% url 'content_list' 'social' %}">Social media</a><small>Facebook, Instagram, X and more</small></li>
+      <li><a href="{% url 'site_settings' %}">Hosted by</a><small>host name, logo and link</small></li>
+      <li><a href="{% url 'content_list' 'cohosts' %}">Co-hosts</a><small>logos shown in the footer</small></li>
+    </ul>
+  </section>
+
+  <section class="cp-card">
+    <div class="cp-card-head"><span class="cp-icon">💳</span><div><h2>Payments</h2><p>Manual tracking, arranged with clients directly</p></div></div>
+    <ul>
+      <li><a href="{% url 'admin_payments' %}">Payment status</a><small>unpaid, partial, paid, verified</small></li>
+      <li><a href="{% url 'admin_payments' %}?status=unpaid">Unpaid bookings</a><small>{{ payment_counts.unpaid }} to follow up</small></li>
+    </ul>
+  </section>
+
+  <section class="cp-card">
+    <div class="cp-card-head"><span class="cp-icon">✉️</span><div><h2>Messages &amp; notifications</h2><p>What needs your reply</p></div></div>
+    <ul>
+      <li><a href="{% url 'admin_inquiries' %}">Contact messages</a><small>{{ open_inquiry_count }} open</small></li>
+      <li><a href="{% url 'notifications' %}">Notifications</a><small>your inbox</small></li>
+      <li><a href="{% url 'admin_broadcast' %}">Send to all clients</a><small>announcements</small></li>
+    </ul>
+  </section>
+
+  <section class="cp-card">
+    <div class="cp-card-head"><span class="cp-icon">👥</span><div><h2>Customers &amp; staff</h2><p>Accounts and administrator access</p></div></div>
+    <ul>
+      <li><a href="{% url 'admin_customers' %}">Customer accounts</a><small>{{ client_count }} clients</small></li>
+      <li><a href="{% url 'admin_create' %}">Create administrator</a><small>only administrators can add one</small></li>
+    </ul>
+  </section>
+
+  <section class="cp-card">
+    <div class="cp-card-head"><span class="cp-icon">⚙️</span><div><h2>Activity &amp; settings</h2><p>Audit trail and your account</p></div></div>
+    <ul>
+      <li><a href="{% url 'admin_activity' %}">System activity</a><small>everything that changed</small></li>
+      <li><a href="{% url 'profile' %}">My profile</a><small>your name and email</small></li>
+      <li><a href="{% url 'password_change' %}">Change password</a><small>keep your account secure</small></li>
+    </ul>
+  </section>
+</div>
+
+<div class="layout-2">
+  <div class="panel">
+    <div class="dash-head" style="margin-bottom:14px"><h2 style="margin:0">Payments to follow up</h2>
+      <a class="linkish" href="{% url 'admin_payments' %}">All payments →</a></div>
+    <p style="color:var(--muted);font-size:.85rem;margin:-4px 0 12px">
+      {{ payment_counts.unpaid }} unpaid · {{ payment_counts.partial }} partially paid · {{ payment_counts.paid }} paid · {{ payment_counts.verified }} verified
+    </p>
+    {% if payment_followups %}
+      <div class="table-wrap"><table>
+        <thead><tr><th>Booking</th><th>Total</th><th>Status</th><th>Set status</th></tr></thead>
+        <tbody>
+          {% for booking in payment_followups %}
+            <tr>
+              <td><a class="linkish" href="{{ booking.get_absolute_url }}">{{ booking.reference }}</a><br><small>{{ booking.full_name }}</small></td>
+              <td>USD {{ booking.total_price }}<br><small>balance USD {{ booking.balance_due }}</small></td>
+              <td><span class="status {{ booking.payment_status }}">{{ booking.get_payment_status_display }}</span></td>
+              <td>
+                <form class="inline-form" method="post" action="{% url 'admin_booking_payment_status' booking.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.path }}">
+                  <select class="input" name="payment_status" style="width:auto;padding:6px" aria-label="Payment status for {{ booking.reference }}">
+                    {% for value, label in payment_status_choices %}
+                      <option value="{{ value }}"{% if value == booking.payment_status %} selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="btn btn-dark btn-sm" type="submit">Save</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table></div>
+    {% else %}
+      <p style="color:var(--muted)">Every active booking is paid or verified.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <div class="dash-head" style="margin-bottom:14px"><h2 style="margin:0">Recent activity</h2>
+      <a class="linkish" href="{% url 'admin_activity' %}">Full log →</a></div>
+    {% for entry in recent_activity %}
+      <div class="notif">
+        <strong>{{ entry.description }}</strong>
+        <small>{{ entry.created_at|date:"j M, H:i" }}{% if entry.actor %} · {{ entry.actor.username }}{% endif %}</small>
+      </div>
+    {% empty %}
+      <p style="color:var(--muted)">No activity recorded yet.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="dash-head" style="margin-bottom:14px"><h2 style="margin:0">Recent bookings</h2>
+    <a class="linkish" href="{% url 'admin_bookings' %}">All bookings →</a></div>
+  {% if recent_bookings %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Reference</th><th>Customer</th><th>Tour</th><th>Date</th><th>Starts</th><th>Hours</th><th>Total</th><th>Status</th><th>Change status</th></tr></thead>
+      <tbody>
+        {% for booking in recent_bookings %}
+          <tr>
+            <td><a class="linkish" href="{{ booking.get_absolute_url }}">{{ booking.reference }}</a></td>
+            <td>{{ booking.full_name }}<br><small>{{ booking.email }}</small></td>
+            <td>{{ booking.package.title }}</td>
+            <td>{{ booking.travel_date|date:"j M Y" }}</td>
+            <td>{% if booking.schedule %}{{ booking.schedule.start_time|time:"H:i" }}{% else %}—{% endif %}</td>
+            <td>{{ booking.duration_hours }}</td>
+            <td>USD {{ booking.total_price }}</td>
+            <td><span class="status {{ booking.status }}">{{ booking.get_status_display }}</span></td>
+            <td>
+              <form class="inline-form" method="post" action="{% url 'admin_booking_status' booking.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <select class="input" name="status" style="width:auto;padding:8px" aria-label="Status for {{ booking.reference }}">
+                  {% for value, label in status_form.fields.status.choices %}
+                    <option value="{{ value }}"{% if value == booking.status %} selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn btn-dark btn-sm" type="submit">Save</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+  {% else %}
+    <p style="color:var(--muted)">No bookings yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

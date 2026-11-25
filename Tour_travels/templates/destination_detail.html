@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}{{ destination.name }}{% endblock %}
+{% block meta_description %}{{ destination.description|truncatechars:150 }}{% endblock %}
+{% block body_attrs %}class="page-destinations"{% endblock %}
+
+{% block content %}
+<section class="dest-hero has-bg"{% if destination.photo_url %} style="background-image:linear-gradient(rgba(10,40,33,.78),rgba(10,40,33,.78)),url('{{ destination.photo_url }}')"{% endif %}><div class="container">
+  <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / <a href="{% url 'destinations' %}">Destinations</a> / {{ destination.name }}</div>
+  <span class="dest-eyebrow">{{ destination.location }}</span>
+  <h1>{{ destination.name }}</h1>
+</div></section>
+
+<section class="dest-section"><div class="container dest-detail">
+  <article class="dest-article">
+    <h2>About this place</h2>
+    <div class="dest-text">{{ destination.description|linebreaksbr }}</div>
+    <p class="dest-actions">
+      <a class="btn btn-dark" target="_blank" rel="noopener" href="{{ destination.map_url }}">Open in Google Maps ↗</a>
+      <a class="btn btn-light" href="{% url 'destinations' %}">← All destinations</a>
+    </p>
+  </article>
+
+  <aside class="dest-map-card" aria-label="Map of {{ destination.name }}">
+    <h2>Find it on the map</h2>
+    <div class="dest-map-frame">
+      <iframe title="Map of {{ destination.name }}" src="{{ destination.map_embed_url }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+    <p class="dest-map-note">{{ destination.name }} · {{ destination.location }}</p>
+  </aside>
+</div></section>
+{% endblock %}

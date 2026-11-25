@@ -1,0 +1,37 @@
+{% extends layout %}
+{% block title %}My reviews{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div><span class="kicker">Reviews &amp; ratings</span><h1>My reviews</h1></div>
+</div>
+
+{% if eligible %}
+  <div class="panel">
+    <h2>Tours you can review</h2>
+    <p style="color:var(--muted);font-size:.9rem">These tours have a confirmed booking for you.</p>
+    <div class="stack">
+      {% for booking in eligible %}
+        <div class="review" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <span><strong>{{ booking.package.title }}</strong><br><small>{{ booking.reference }}</small></span>
+          <a class="btn btn-dark btn-sm" href="{{ booking.package.get_absolute_url }}#write-review">Write a review</a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+<div class="panel">
+  <h2>Reviews I have written</h2>
+  {% for review in reviews %}
+    <div class="review">
+      <div class="rating">{% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}</div>
+      <p><strong><a href="{{ review.package.get_absolute_url }}">{{ review.package.title }}</a></strong> · {{ review.created_at|date:"j M Y" }}</p>
+      <p>{{ review.comment }}</p>
+      {% if not review.is_published %}<span class="status cancelled">Hidden by the team</span>{% endif %}
+    </div>
+  {% empty %}
+    <p style="color:var(--muted)">You have not written any reviews yet. Reviews open after a confirmed booking.</p>
+  {% endfor %}
+</div>
+{% endblock %}

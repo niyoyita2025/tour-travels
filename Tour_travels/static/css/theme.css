@@ -1,0 +1,190 @@
+/* Dark and light themes. The page is dark when <html data-theme="dark"> (set by the toggle or the device setting).
+   Light is the default design in site.css; these rules only change colours in dark mode. */
+
+/* Light mode: the toggle's own styling and the translate widget, which both work in either theme */
+.theme-toggle {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: #fff;
+  cursor: pointer; font-size: 1.05rem; line-height: 1; display: grid; place-items: center;
+  transition: transform .2s ease, background .2s ease;
+}
+.theme-toggle:hover { transform: rotate(-12deg) scale(1.05); }
+.theme-toggle:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.gt-wrap { min-width: 0; }
+.gt-wrap .goog-te-gadget { font-family: inherit; font-size: 0; }
+.gt-wrap .goog-te-gadget-simple {
+  background: #fff !important; border: 1px solid var(--line) !important; border-radius: 999px !important;
+  padding: 6px 10px !important; font-size: .85rem !important; cursor: pointer;
+}
+.gt-wrap .goog-te-gadget-icon, .gt-wrap .goog-te-gadget span { display: none !important; }
+.gt-wrap .goog-te-combo { font: inherit; font-size: .85rem; padding: 6px 8px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink); }
+/* Google adds a banner and shifts the page down; keep the site where it was */
+.goog-te-banner-frame.skiptranslate, iframe.goog-te-banner-frame { display: none !important; }
+body { top: 0 !important; }
+#goog-gt-tt, .goog-tooltip, .goog-tooltip:hover { display: none !important; }
+.goog-text-highlight { background: none !important; box-shadow: none !important; }
+/* Google moves the whole page down for its banner. The banner is hidden, so keep the page where it is. */
+body { top: 0 !important; }
+
+/* ---------- Dark theme ---------- */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --cream: #0e1714;
+  --ink: #e6efe9;
+  --muted: #9fb1a8;
+  --white: #17241f;
+  --line: #2a3d35;
+  --shadow: 0 18px 55px rgba(0, 0, 0, .45);
+}
+html[data-theme="dark"] body { background: #0e1714; color: #e6efe9; }
+html[data-theme="dark"] body.has-dashboard { background: #0e1714; }
+
+/* Header and navigation */
+html[data-theme="dark"] .nav { background: rgba(14, 23, 20, .94); border-bottom-color: rgba(255, 255, 255, .08); }
+html[data-theme="dark"] .brand { color: #e6efe9; }
+html[data-theme="dark"] .links a:hover, html[data-theme="dark"] .links a[aria-current="page"] { color: #8fd6b5; }
+html[data-theme="dark"] .menu { color: #e6efe9; }
+html[data-theme="dark"] .theme-toggle { background: #1a2a24; border-color: #2f4a40; color: #f6e7b4; }
+html[data-theme="dark"] .gt-wrap .goog-te-gadget-simple,
+html[data-theme="dark"] .gt-wrap .goog-te-combo { background: #1a2a24 !important; color: #e6efe9; border-color: #2f4a40 !important; }
+html[data-theme="dark"] .links { background: #0e1714; }
+
+/* Buttons */
+html[data-theme="dark"] .btn-dark { background: #2f7d61; color: #fff; }
+html[data-theme="dark"] .btn-light { background: #1a2a24; color: #e6efe9; border-color: #2f4a40; }
+html[data-theme="dark"] .btn-danger { background: #4a1f1a; color: #f5c2bb; }
+html[data-theme="dark"] .linkish, html[data-theme="dark"] .maplink, html[data-theme="dark"] .kicker { color: #8fd6b5; }
+
+/* Surfaces: cards, panels, forms and boxes that are white in light mode */
+html[data-theme="dark"] :is(
+  .card, .package, .culture-item, .form-card, .auth-card, .side-card, .panel, .stat, .faq-item,
+  .cal-card, .slot, .book-card, .link-card, .about-card, .detail-section-card, .offer, .cp-card,
+  .bg-card, .gallery-item, .summary-card, .empty, .filter-bar, .dash-sidebar, .review, .bg-preview,
+  .dash-nav, .cal-legend
+) {
+  background-color: #17241f;
+  color: #e6efe9;
+  border-color: #2a3d35;
+}
+html[data-theme="dark"] .package.featured { background: linear-gradient(160deg, #1d3a2f, #17241f); border-color: #c9a24a; }
+html[data-theme="dark"] .package .btn-outline { color: #e6efe9; border-color: rgba(255, 255, 255, .3); }
+html[data-theme="dark"] .card:hover, html[data-theme="dark"] .package:hover, html[data-theme="dark"] .cp-card:hover { box-shadow: 0 18px 40px rgba(0, 0, 0, .5); }
+html[data-theme="dark"] .card-img { filter: brightness(.95); }
+html[data-theme="dark"] .dash-user { border-bottom-color: #2a3d35; }
+html[data-theme="dark"] .dash-user small { color: #9fb1a8; }
+html[data-theme="dark"] .dash-group { color: #7f9a8e; }
+html[data-theme="dark"] .dash-nav a { color: #d8e5de; }
+html[data-theme="dark"] .dash-nav a:hover { background: #1f3129; color: #8fd6b5; }
+html[data-theme="dark"] .quick-links a, html[data-theme="dark"] .cp-card li a { color: #e6efe9; background: #17241f; border-color: #2a3d35; }
+html[data-theme="dark"] .cp-card li a small, html[data-theme="dark"] .cp-card-head p { color: #9fb1a8; }
+html[data-theme="dark"] .cp-card li a:hover { background: #1f3129; color: #8fd6b5; }
+html[data-theme="dark"] .cp-icon { background: #1f3129; }
+html[data-theme="dark"] .bg-preview { background: linear-gradient(135deg, #1a2a24, #0e1714) center/cover; }
+html[data-theme="dark"] .bg-preview.is-empty span { color: #9fb1a8; }
+html[data-theme="dark"] .notif strong { color: #e6efe9; }
+html[data-theme="dark"] .notif small, html[data-theme="dark"] .notif p { color: #b9c9c0; }
+html[data-theme="dark"] .notif.unread { border-left-color: #c9a24a; }
+
+/* Sections with a light band */
+html[data-theme="dark"] .destinations, html[data-theme="dark"] .booking, html[data-theme="dark"] .hub-alt { background: #111c18; }
+html[data-theme="dark"] .ticklist li:before { background: #1f3a31; color: #8fd6b5; }
+html[data-theme="dark"] .page-section, html[data-theme="dark"] section:not(.experience):not(.final-cta):not(.hero) { background-color: transparent; }
+html[data-theme="dark"] .final-cta, html[data-theme="dark"] .experience, html[data-theme="dark"] .hero { background-color: #0c2d25; }
+
+/* Text colours that were set for white backgrounds */
+html[data-theme="dark"] :is(
+  .section-head h2, .intro-copy h2, .dest-body h3, .card-body h3, .card-body h3 a, .panel h2, .panel h3,
+  .form-card h2, .form-card h3, .stat strong, .detail-body h2, .auth-card h1, .summary-card h1,
+  .cp-card-head h2, .bg-body h2, .cal-card h3, .book-card h3, .link-card h3, .detail-section-card h3,
+  .about-card h3, .offer strong, .slot strong, .price, .side-card .price, .dash-head h1, .dash-user strong,
+  .dash-head h2, .summary-table th
+) { color: #e6efe9; }
+html[data-theme="dark"] :is(.stat span, .cp-card-head p, .dest-num, .tour-count, .help, .bg-status, .footer-note)  { color: #9fb1a8; }
+html[data-theme="dark"] .dest-num { color: #d9b36a; }
+html[data-theme="dark"] :is(
+  .about-card p, .book-card p, .link-card p, .detail-section-card div, .review p, .highlight-list,
+  .detail-body p, .detail-body, .about-lead, .faq-item p, .intro-copy p, .card-body p, .cal-card p,
+  .slot-note, .summary-table td, .details-body, .field label, .field > .label, .check, .label,
+  .form-foot small, .summary-list dd, .summary-list dt, .cal-instructions, .breadcrumbs
+) { color: #c9d8cf; }
+html[data-theme="dark"] .summary-list div { border-bottom-color: #2a3d35; }
+html[data-theme="dark"] .summary-table th, html[data-theme="dark"] .summary-table td,
+html[data-theme="dark"] th, html[data-theme="dark"] td { border-bottom-color: #2a3d35; }
+html[data-theme="dark"] th { color: #9fb1a8; }
+html[data-theme="dark"] .review { border-top-color: #2a3d35; }
+html[data-theme="dark"] .cal-instructions { background: #13293a; border-color: #23475f; color: #bcdcea; }
+html[data-theme="dark"] .breadcrumbs { color: #c7d5ce; }
+
+/* Form fields */
+html[data-theme="dark"] :is(.input, .field input, .field select, .field textarea, input, select, textarea) {
+  background: #0f1915;
+  color: #e6efe9;
+  border-color: #2f4a40;
+}
+html[data-theme="dark"] :is(.input, input, select, textarea)::placeholder { color: #6f837a; }
+html[data-theme="dark"] .field input:focus, html[data-theme="dark"] .input:focus, html[data-theme="dark"] select:focus, html[data-theme="dark"] textarea:focus {
+  border-color: #3f9a7c; box-shadow: 0 0 0 3px rgba(63, 154, 124, .2);
+}
+html[data-theme="dark"] .field.has-error .input { border-color: #b8564a; }
+html[data-theme="dark"] .field .errorlist, html[data-theme="dark"] .form-errors { color: #f5c2bb; }
+html[data-theme="dark"] .form-errors { background: #3a1f1c; border-color: #6b3a35; }
+
+/* Alerts, notices and status labels */
+html[data-theme="dark"] .alert-success { background: #15352a; color: #bfe8d0; border-color: #24523f; }
+html[data-theme="dark"] .alert-error { background: #3a1f1c; color: #f5c2bb; border-color: #6b3a35; }
+html[data-theme="dark"] .alert-info { background: #13293a; color: #bcdcea; border-color: #23475f; }
+html[data-theme="dark"] .alert-warning, html[data-theme="dark"] .notice { background: #3a3218; color: #f2dfa8; border-color: #6b5a25; }
+html[data-theme="dark"] .status { background: #22302b; color: #c9d6cf; }
+html[data-theme="dark"] .status.pending { background: #4a3d12; color: #f5deaa; }
+html[data-theme="dark"] .status.confirmed, html[data-theme="dark"] .status.completed,
+html[data-theme="dark"] .status.paid, html[data-theme="dark"] .status.pill-ok { background: #173d2c; color: #b8ecd0; }
+html[data-theme="dark"] .status.cancelled, html[data-theme="dark"] .status.failed,
+html[data-theme="dark"] .status.unpaid { background: #4a1f1a; color: #f5c2bb; }
+html[data-theme="dark"] .status.partial, html[data-theme="dark"] .status.verified { background: #1d3a4a; color: #bfe0f0; }
+html[data-theme="dark"] .status.expired { background: #22302b; color: #9fb1a8; }
+html[data-theme="dark"] .pill { background: #1f3a31; color: #bfe8d6; }
+html[data-theme="dark"] .pill.gold { background: #4a3d12; color: #f5deaa; }
+html[data-theme="dark"] .slot-chip { background: #173d2c; color: #b8ecd0; border-color: #24523f; }
+html[data-theme="dark"] .slot-chip.is-limited { background: #4a3d12; color: #f5deaa; border-color: #6b5a25; }
+html[data-theme="dark"] .slot-chip.is-full { background: #4a1f1a; color: #f5c2bb; border-color: #6b3a35; }
+
+/* Destinations and Tours pages */
+html[data-theme="dark"] :is(.dest-tile, .dest-article, .dest-map-card, .tour-card, .tour-filter) {
+  background: #17241f; border-color: #2a3d35; box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
+}
+html[data-theme="dark"] .dest-section, html[data-theme="dark"] .tour-section { background: #0e1714; }
+html[data-theme="dark"] .dest-tile-body h3, html[data-theme="dark"] .dest-article h2,
+html[data-theme="dark"] .dest-map-card h2, html[data-theme="dark"] .tour-card-body h3 a { color: #e6efe9; }
+html[data-theme="dark"] .dest-desc, html[data-theme="dark"] .dest-text, html[data-theme="dark"] .tour-summary,
+html[data-theme="dark"] .dest-map-note { color: #b9c9c0; }
+html[data-theme="dark"] .dest-map { color: #8fd6b5; }
+html[data-theme="dark"] .tour-facts span { background: #2a2b1c; color: #f0d88e; }
+html[data-theme="dark"] .tour-price { color: #f4e2b2; }
+html[data-theme="dark"] .tour-price small { color: #b9a772; }
+html[data-theme="dark"] .tour-card-foot { border-top-color: #3a3520; }
+html[data-theme="dark"] .tour-filter .field label { color: #d8c48a; }
+html[data-theme="dark"] .dest-map-frame { background: #1a2a24; border-color: #2a3d35; }
+
+/* Category chips */
+html[data-theme="dark"] .cat-chip { background: #17241f; color: #e6efe9; border-color: #2f4a40; }
+html[data-theme="dark"] .cat-chip.is-active { background: #2f7d61; border-color: #2f7d61; color: #fff; }
+html[data-theme="dark"] .cat-count { background: #1f3129; color: #8fd6b5; }
+
+/* Tables and pagination */
+html[data-theme="dark"] .pagination a, html[data-theme="dark"] .pagination span { background: #17241f; border-color: #2a3d35; color: #e6efe9; }
+html[data-theme="dark"] .pagination .current { background: #2f7d61; border-color: #2f7d61; color: #fff; }
+html[data-theme="dark"] tr:hover td { background: rgba(255, 255, 255, .02); }
+
+/* Calendar day cells keep their status colours; only the empty and outside cells change */
+html[data-theme="dark"] .cal-day.is-outside { background: transparent; color: #3c4d46; }
+html[data-theme="dark"] .cal-day.is-selected { box-shadow: 0 0 0 3px rgba(143, 214, 181, .3); }
+html[data-theme="dark"] .sw-none, html[data-theme="dark"] .day-none, html[data-theme="dark"] .day-past { --c-bg: #26332e; --c-ink: #9aaba2; --c-dot: #5b6b63; }
+
+/* Alerts over images and the public footer stay readable */
+html[data-theme="dark"] .site-footer { background: linear-gradient(160deg, #07130f 0%, #0c2d25 100%); }
+html[data-theme="dark"] .social-link { background: rgba(255, 255, 255, .06); }
+
+/* Mobile navigation panel */
+@media (max-width: 650px) {
+  html[data-theme="dark"] .links.open { background: #0e1714; }
+  .gt-wrap .goog-te-gadget-simple { padding: 5px 8px !important; }
+}

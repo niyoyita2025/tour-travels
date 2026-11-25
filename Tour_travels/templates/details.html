@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}{{ page.title }}{% endblock %}
+{% block meta_description %}{{ page.intro|truncatechars:150 }}{% endblock %}
+
+{% block content %}
+<section class="page-hero has-bg"{% if backgrounds.details %} style="background-image:linear-gradient(rgba(18,61,50,.86),rgba(18,61,50,.86)),url('{{ backgrounds.details }}')"{% endif %}><div class="container details-hero-text">
+  <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / {{ page.title }}</div>
+  <h1>{{ page.title }}</h1>
+  <p>{{ page.intro }}</p>
+</div></section>
+
+<section class="page-section"><div class="container">
+
+  {% if page.body %}
+    <div class="details-body">{{ page.body }}</div>
+  {% endif %}
+
+  {% if sections %}
+    <div class="details-block">
+      {% for section in sections %}
+        <div class="detail-section-card">
+          <h3>{{ section.heading }}</h3>
+          <div>{{ section.body }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if photos %}
+    <div class="details-block">
+      <h2>Photo gallery</h2>
+      <div class="gallery-grid">
+        {% for photo in photos %}
+          <figure class="gallery-item">
+            <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:'Photo' }}" loading="lazy">
+            {% if photo.caption %}<figcaption>{{ photo.caption }}</figcaption>{% endif %}
+          </figure>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if books %}
+    <div class="details-block">
+      <h2>Recommended books</h2>
+      <div class="book-grid">
+        {% for book in books %}
+          <article class="book-card">
+            <h3>{{ book.title }}</h3>
+            {% if book.author %}<p class="author">by {{ book.author }}</p>{% endif %}
+            {% if book.description %}<p>{{ book.description }}</p>{% endif %}
+            {% if book.link %}<a class="external" href="{{ book.link }}" target="_blank" rel="noopener noreferrer">Where to find it ↗</a>{% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if links %}
+    <div class="details-block">
+      <h2>Useful links</h2>
+      <div class="link-grid">
+        {% for link in links %}
+          <article class="link-card">
+            <h3>{{ link.title }}</h3>
+            {% if link.description %}<p>{{ link.description }}</p>{% endif %}
+            <a class="external" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">Visit website ↗</a>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if not sections and not photos and not books and not links and not page.body %}
+    <div class="empty">More information will be added here soon. <a class="linkish" href="{% url 'contact' %}">Ask us anything</a>.</div>
+  {% endif %}
+
+  <div class="details-block" style="text-align:center">
+    <a class="btn btn-dark" href="{% url 'packages' %}">Browse tours →</a>
+  </div>
+</div></section>
+{% endblock %}

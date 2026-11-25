@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Continue your booking{% endblock %}
+
+{% block content %}
+<section class="page-section"><div class="container layout-2" style="align-items:start">
+  <div class="auth-card" style="margin:0;max-width:none">
+    <span class="kicker">Almost there</span>
+    <h1 style="margin-top:6px">Create an account or sign in to continue</h1>
+    <p>Your selection is saved, so you will not lose it. Once you are signed in you go straight to your booking details.</p>
+
+    <div class="stack" style="margin-top:18px">
+      <a class="btn btn-dark btn-block" href="{% url 'register' %}?next={% url 'booking_resume' %}">I'm new: create my account</a>
+      <a class="btn btn-light btn-block" href="{% url 'login' %}?next={% url 'booking_resume' %}">I already have an account: sign in</a>
+    </div>
+    <p class="auth-foot" style="font-size:.85rem">Your selection is kept for two hours. Nothing is booked until you submit the booking form.</p>
+  </div>
+
+  <aside class="panel">
+    <h2>Your selection</h2>
+    <dl class="summary-list">
+      <div><dt>Tour</dt><dd>{{ package.title }}</dd></div>
+      <div><dt>Date</dt><dd>{{ schedule.date|date:"l j F Y" }}</dd></div>
+      <div><dt>Time</dt><dd>{{ schedule.start_time|time:"H:i" }}</dd></div>
+      <div><dt>Guests</dt><dd>{{ guests }}</dd></div>
+      <div><dt>Seats left</dt><dd>{{ schedule.seats_remaining }}</dd></div>
+    </dl>
+    <p style="margin-top:14px"><a class="linkish" href="{% url 'tour_calendar' package.slug %}?date={{ schedule.date|date:'Y-m-d' }}">← Choose a different date</a></p>
+  </aside>
+</div></section>
+{% endblock %}

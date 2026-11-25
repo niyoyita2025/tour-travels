@@ -1,0 +1,67 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Payments{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Operations</span>
+    <h1>Payments</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Payment is arranged directly with clients by phone or agreed methods. Record what was received, then set each booking's status.</p>
+  </div>
+</div>
+
+<div class="stat-grid">
+  {% for value, label, count in status_counts %}
+    <a class="stat" href="?status={{ value }}" style="text-decoration:none">
+      <span>{{ label }}</span><strong>{{ count }}</strong>
+    </a>
+  {% endfor %}
+  <div class="stat"><span>Total recorded</span><strong>USD {{ recorded_total }}</strong></div>
+</div>
+
+<form method="get" action="{% url 'admin_payments' %}" class="filter-bar" style="grid-template-columns:1fr 1fr auto">
+  <div class="field"><label for="q">Search</label><input class="input" id="q" name="q" value="{{ q }}" placeholder="Booking reference or name"></div>
+  <div class="field"><label for="status">Payment status</label>
+    <select class="input" id="status" name="status">
+      <option value="">All statuses</option>
+      {% for value, label in status_choices %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-dark" type="submit">Filter</button>
+</form>
+
+{% if page.object_list %}
+  <div class="panel table-wrap">
+    <table>
+      <thead><tr><th>Booking</th><th>Customer</th><th>Total</th><th>Received</th><th>Balance</th><th>Payment status</th><th>Set status</th></tr></thead>
+      <tbody>
+        {% for booking in page %}
+          <tr>
+            <td><a class="linkish" href="{{ booking.get_absolute_url }}">{{ booking.reference }}</a><br><small>{{ booking.package.title }}</small></td>
+            <td>{{ booking.full_name }}<br><small>{{ booking.phone }}</small></td>
+            <td>USD {{ booking.total_price }}</td>
+            <td>USD {{ booking.amount_paid }}</td>
+            <td>USD {{ booking.balance_due }}</td>
+            <td><span class="status {{ booking.payment_status }}">{{ booking.get_payment_status_display }}</span></td>
+            <td>
+              <form class="inline-form" method="post" action="{% url 'admin_booking_payment_status' booking.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <select class="input" name="payment_status" style="width:auto;padding:8px" aria-label="Payment status for {{ booking.reference }}">
+                  {% for value, label in status_choices %}
+                    <option value="{{ value }}"{% if value == booking.payment_status %} selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn btn-dark btn-sm" type="submit">Save</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include '_pagination.html' %}
+{% else %}
+  <div class="empty">No bookings match this filter.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Background images{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Website pages</span>
+    <h1>Background images</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Choose one photo for each part of the website. Upload to set or replace it, or remove it to show the default design. Changes appear on the website straight away.</p>
+  </div>
+</div>
+
+<div class="bg-grid">
+  {% for row in rows %}
+    <section class="bg-card" aria-labelledby="bg-{{ row.key }}">
+      <div class="bg-preview{% if not row.url %} is-empty{% endif %}"{% if row.url %} style="background-image:url('{{ row.url }}')"{% endif %}>
+        {% if not row.url %}<span>Default design</span>{% endif %}
+      </div>
+      <div class="bg-body">
+        <h2 id="bg-{{ row.key }}">{{ row.label }}</h2>
+        <p class="bg-status">{% if row.url %}<span class="status confirmed">Custom image set</span>{% else %}<span class="status expired">Using the default design</span>{% endif %}</p>
+
+        <form method="post" action="{% url 'background_save' row.key %}" enctype="multipart/form-data" class="bg-form">
+          {% csrf_token %}
+          <label for="file-{{ row.key }}" class="label">{% if row.url %}Replace the image{% else %}Upload an image{% endif %}</label>
+          <input class="input" type="file" id="file-{{ row.key }}" name="image" accept="image/jpeg,image/png,image/webp">
+          <small class="help">Best size: {{ row.width }} × {{ row.height }} px. Upload any photo: it is cropped to this size automatically. JPG, PNG or WebP, up to 5 MB.</small>
+          <div class="bg-actions">
+            <button class="btn btn-dark btn-sm" type="submit" name="action" value="save">Save image</button>
+          </div>
+        </form>
+        {% if row.url %}
+          <form method="post" action="{% url 'background_save' row.key %}" onsubmit="return confirm('Remove this background image?');" class="bg-remove">
+            {% csrf_token %}
+            <button class="btn btn-danger btn-sm" type="submit" name="action" value="remove">Remove image</button>
+          </form>
+        {% endif %}
+      </div>
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

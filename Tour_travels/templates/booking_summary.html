@@ -1,0 +1,40 @@
+{% extends layout %}
+{% block title %}Review your booking · {{ package.title }}{% endblock %}
+
+{% block dash %}
+<div class="summary-card">
+  <span class="kicker">Step 2 of 2</span>
+  <h1>Review your booking</h1>
+  <p style="color:var(--muted);margin:0">Please check these details. Nothing is booked until you confirm.</p>
+
+  <table class="summary-table" aria-label="Booking summary">
+    <tbody>
+      <tr><th scope="row">Tour</th><td>{{ package.title }}</td></tr>
+      <tr><th scope="row">Date</th><td>{{ schedule.date|date:"l j F Y" }}</td></tr>
+      <tr><th scope="row">Starting time</th><td>{{ schedule.start_time|time:"H:i" }}</td></tr>
+      <tr><th scope="row">Duration</th><td>{{ data.duration_hours }} hour{{ data.duration_hours|pluralize }}</td></tr>
+      <tr><th scope="row">Destination</th><td>{{ data.destination|default:"Not chosen" }}</td></tr>
+      <tr><th scope="row">Guests</th><td>{{ data.guests }}</td></tr>
+      <tr><th scope="row">Price</th><td>USD {{ package.price }} per guest · total USD {{ total }}</td></tr>
+      <tr><th scope="row">Name</th><td>{{ data.full_name }}</td></tr>
+      <tr><th scope="row">Email</th><td>{{ data.email }}</td></tr>
+      <tr><th scope="row">Phone</th><td>{{ data.phone }}</td></tr>
+      <tr><th scope="row">Country</th><td>{{ data.country }}</td></tr>
+      {% if data.special_requests %}<tr><th scope="row">Special requests</th><td>{{ data.special_requests|linebreaksbr }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+
+  <p class="notice">No payment is needed to submit this request. Payment is arranged directly with the tour operator{% if site.payment_phone %} on <strong>{{ site.payment_phone }}</strong>{% endif %}.</p>
+
+  <div class="summary-actions">
+    <form method="post" action="{% url 'book_package' package.slug %}" style="margin:0">
+      {% csrf_token %}
+      {% for name, value in hidden %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+      <input type="hidden" name="confirm" value="1">
+      <button class="btn btn-dark" type="submit">Confirm booking request</button>
+    </form>
+    <a class="btn btn-light" href="{% url 'book_package' package.slug %}?schedule={{ schedule.pk }}&amp;guests={{ data.guests }}">← Change details</a>
+    <a class="btn btn-light" href="{% url 'tour_calendar' package.slug %}?date={{ schedule.date|date:'Y-m-d' }}">Choose another time</a>
+  </div>
+</div>
+{% endblock %}

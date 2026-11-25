@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Create account{% endblock %}
+
+{% block content %}
+<section class="auth-wrap"><div class="container">
+  <div class="auth-card">
+    <h1>Create your account</h1>
+    <p>Save your details, book tours and track your payments in one place.</p>
+    <form method="post" action="{% url 'register' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" novalidate data-busy-text="Sending your code…">
+      {% csrf_token %}
+      <div class="stack">
+        {% include '_form_fields.html' %}
+      </div>
+      <div class="form-foot">
+        <button class="btn btn-dark btn-block" type="submit">Create account</button>
+        <p class="auth-hint">We will email a six-digit code to this address. Enter it on the next page to activate your account.</p>
+      </div>
+    </form>
+    <p class="auth-foot">Already have an account? <a class="linkish" href="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}">Log in instead</a></p>
+  </div>
+</div></section>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/otp.js' %}" defer></script>{% endblock %}

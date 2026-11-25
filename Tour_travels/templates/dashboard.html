@@ -1,0 +1,70 @@
+{% extends 'layouts/client.html' %}
+{% block title %}My dashboard{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">My dashboard</span>
+    <h1>Welcome back, {{ user.first_name|default:user.username }}.</h1>
+  </div>
+  <a class="btn btn-dark" href="{% url 'packages' %}">Book a new tour</a>
+</div>
+
+<div class="stat-grid">
+  <div class="stat"><span>Bookings</span><strong>{{ total_bookings }}</strong></div>
+  <div class="stat"><span>Upcoming trips</span><strong>{{ upcoming_count }}</strong></div>
+  <div class="stat"><span>Confirmed spend</span><strong>USD {{ total_spent }}</strong></div>
+  <div class="stat"><span>Unread notifications</span><strong>{{ unread_count }}</strong></div>
+</div>
+
+<div class="layout-2">
+  <div class="panel">
+    <div class="dash-head" style="margin-bottom:14px">
+      <h2 style="margin:0">Recent bookings</h2>
+      <a class="linkish" href="{% url 'booking_history' %}">View all →</a>
+    </div>
+    {% if bookings %}
+      <div class="table-wrap"><table>
+        <thead><tr><th>Tour</th><th>Travel date</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for booking in bookings %}
+            <tr>
+              <td><a href="{{ booking.get_absolute_url }}"><strong>{{ booking.package.title }}</strong></a><br><small>{{ booking.reference }}</small></td>
+              <td>{{ booking.travel_date|date:"j M Y" }}</td>
+              <td><span class="status {{ booking.status }}">{{ booking.get_status_display }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table></div>
+    {% else %}
+      <div class="empty" style="padding:30px">No bookings yet. <a class="linkish" href="{% url 'packages' %}">Find your first tour</a>.</div>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <div class="dash-head" style="margin-bottom:14px">
+      <h2 style="margin:0">Latest notifications</h2>
+      <a class="linkish" href="{% url 'notifications' %}">All →</a>
+    </div>
+    {% for item in recent_notifications %}
+      <div class="notif {% if not item.is_read %}unread{% endif %}">
+        <strong>{{ item.title }}</strong>
+        <small>{{ item.created_at|timesince }} ago</small>
+        {% if item.message %}<p>{{ item.message }}</p>{% endif %}
+      </div>
+    {% empty %}
+      <p style="color:var(--muted)">No notifications yet. Booking confirmations and payment updates appear here.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Quick actions</h2>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a class="btn btn-light" href="{% url 'destinations' %}">Explore destinations</a>
+    <a class="btn btn-light" href="{% url 'packages' %}">Search tours</a>
+    <a class="btn btn-light" href="{% url 'my_reviews' %}">Write a review</a>
+    <a class="btn btn-light" href="{% url 'contact' %}">Contact the team</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}{% if schedule %}Edit tour date{% else %}Add a tour date{% endif %}{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'admin_schedules' %}">← Tour dates &amp; capacity</a></span>
+    <h1>{% if schedule %}Edit tour date{% else %}Add a tour date{% endif %}</h1>
+    {% if schedule %}<p style="color:var(--muted);margin:6px 0 0">{{ schedule.seats_booked }} seat(s) already booked. Capacity cannot go below this.</p>{% endif %}
+  </div>
+</div>
+
+<div class="layout-2">
+  <div class="form-card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="form-grid">{% include '_form_fields.html' %}</div>
+      <div class="form-foot">
+        <button class="btn btn-dark" type="submit">Save date</button>
+        <small>Changing the date or time moves every booking on this slot to the new date.</small>
+      </div>
+    </form>
+  </div>
+  <aside class="panel">
+    <h2>Capacity and status</h2>
+    <ul class="highlight-list">
+      <li><strong>Capacity</strong> is the maximum number of clients (guests) for this date and time.</li>
+      <li>When it is full the date shows red and cannot be booked.</li>
+      <li><strong>Open for booking</strong> can be unticked to close a slot without losing its bookings.</li>
+      <li>Confirming or cancelling bookings updates the seats left automatically.</li>
+    </ul>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+<footer class="site-footer">
+  <div class="container">
+
+    <div class="footer-grid">
+      {# 1. Company #}
+      <div class="footer-col footer-company">
+        <a class="brand footer-brand" href="{% url 'home' %}"><span class="brandmark">R</span><span>{{ site_name|truncatechars:26 }}<small>with a local guide</small></span></a>
+        <p>{{ site.footer_tagline }}</p>
+      </div>
+
+      {# 2. Popular destinations (from the database; hidden when there are none) #}
+      {% if footer_destinations %}
+      <div class="footer-col">
+        <h3>Popular destinations</h3>
+        <ul class="footer-list">
+          {% for destination in footer_destinations %}
+            <li><a href="{{ destination.get_absolute_url }}">{{ destination.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {# 3. Contact (from the Contact management page) #}
+      <div class="footer-col">
+        <h3>Contact</h3>
+        <ul class="footer-list footer-contact">
+          {% if site.contact_phone %}<li><span aria-hidden="true">📞</span> <a href="tel:{{ site.contact_phone|cut:' ' }}">{{ site.contact_phone }}</a></li>{% endif %}
+          {% if site.contact_email %}<li><span aria-hidden="true">✉️</span> <a href="mailto:{{ site.contact_email }}">{{ site.contact_email }}</a></li>{% endif %}
+          {% if site.contact_address %}<li><span aria-hidden="true">📍</span> {{ site.contact_address }}</li>{% endif %}
+          {% if whatsapp_number %}<li><span aria-hidden="true">💬</span> <a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener noreferrer">WhatsApp us</a></li>{% endif %}
+          <li><a href="{% url 'contact' %}">Send us a message →</a></li>
+        </ul>
+      </div>
+
+      {# 4. Social media (icons appear only for accounts the administrator has added and activated) #}
+      {% if footer_social %}
+      <div class="footer-col">
+        <h3>Follow us</h3>
+        <div class="social-links">
+          {% for network in footer_social %}
+            <a class="social-link social-{{ network.platform }}" href="{{ network.url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ network.display_label }} (opens in a new tab)" title="{{ network.display_label }}">
+              {% if network.platform == 'facebook' %}
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.6 1.6-1.6h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3V14h2.8v8z"/></svg>
+              {% elif network.platform == 'instagram' %}
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.3"/></svg>
+              {% elif network.platform == 'x' %}
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              {% elif network.platform == 'tiktok' %}
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16.6 5.8A4.3 4.3 0 0 1 15.5 3h-3.2v12.4a2.6 2.6 0 1 1-2.6-2.6c.2 0 .5 0 .7.1V9.6a5.8 5.8 0 1 0 5.1 5.8V8.9a7.4 7.4 0 0 0 4.3 1.4V7.1a4.3 4.3 0 0 1-3.2-1.3z"/></svg>
+              {% elif network.platform == 'youtube' %}
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12a31 31 0 0 0 .4 4.8 3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 23.4 12a31 31 0 0 0-.4-4.8zM9.6 15.2V8.8L15.8 12z"/></svg>
+              {% elif network.platform == 'linkedin' %}
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.98 3.5A2.5 2.5 0 1 1 5 8.5a2.5 2.5 0 0 1 0-5zM3 9.5h4V21H3zM9.5 9.5h3.8v1.6h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.6 4.8 6V21h-4v-5.1c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21h-4z"/></svg>
+              {% elif network.platform == 'whatsapp' %}
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.8-1.3.1-.2 0-.3 0-.5l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c2.3.9 2.3.6 2.7.6a2.3 2.3 0 0 0 1.5-1.1 1.8 1.8 0 0 0 .1-1.1c0-.1-.2-.2-.4-.3z"/></svg>
+              {% else %}
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.6 13.4a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13.4 10.6a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              {% endif %}
+              <span class="visually-hidden">{{ network.display_label }}</span>
+            </a>
+          {% endfor %}
+        </div>
+        <p class="footer-note">Opens in a new tab.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {# 5 and 6. Hosted by, and co-hosts. Each block is hidden when it has no content. #}
+    {% if footer_hosted or footer_cohosts %}
+    <div class="footer-partners">
+      {% if footer_hosted %}
+      <div class="hosted-by">
+        <span class="partner-label">Hosted by</span>
+        {% if site.hosted_by_url %}<a class="hosted-link" href="{{ site.hosted_by_url }}" target="_blank" rel="noopener noreferrer">{% endif %}
+          {% if site.hosted_by_logo %}
+            <img class="partner-logo" src="{{ site.hosted_by_logo.url }}" alt="{{ site.hosted_by_name|default:'Host' }} logo" loading="lazy">
+          {% endif %}
+          <strong>{{ site.hosted_by_name|default:'Host' }}</strong>
+        {% if site.hosted_by_url %}</a>{% endif %}
+      </div>
+      {% endif %}
+
+      {% if footer_cohosts %}
+      <div class="cohosts">
+        <span class="partner-label">Co-hosts</span>
+        <div class="cohost-grid">
+          {% for cohost in footer_cohosts %}
+            {% if cohost.website_url %}
+              <a class="cohost" href="{{ cohost.website_url }}" target="_blank" rel="noopener noreferrer" title="{{ cohost.name }} (opens in a new tab)">
+            {% else %}
+              <div class="cohost">
+            {% endif %}
+              {% if cohost.logo %}
+                <img class="partner-logo" src="{{ cohost.logo_url }}" alt="{{ cohost.name }} logo" loading="lazy">
+              {% else %}
+                <span class="cohost-initial" aria-hidden="true">{{ cohost.name|slice:":1" }}</span>
+              {% endif %}
+              <span class="cohost-name">{{ cohost.name }}</span>
+            {% if cohost.website_url %}</a>{% else %}</div>{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# 7. Copyright #}
+    <div class="footer-bottom">
+      <span>© {{ current_year }} {{ site_name }}. All rights reserved.</span>
+      <span>Made with a love for Rwanda 🇷🇼</span>
+    </div>
+  </div>
+</footer>

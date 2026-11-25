@@ -1,0 +1,24 @@
+{% comment %}
+  The language selector: a globe, the current language code and a menu of the available languages.
+  Translation runs in the visitor's browser through Google Translate (static/js/language.js).
+  The hidden container is where Google's translation script attaches.
+{% endcomment %}
+<div class="lang" data-lang-picker translate="no">
+  <button type="button" class="lang-btn" data-lang-button aria-haspopup="menu" aria-expanded="false" aria-controls="langMenu" title="Choose a language">
+    <svg class="lang-globe" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 4 5.7 4 9s-1.4 6.3-4 9c-2.6-2.7-4-5.7-4-9s1.4-6.3 4-9z"/></svg>
+    <span class="lang-code" data-lang-code>EN</span>
+    <svg class="lang-caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg>
+    <span class="sr-only" data-lang-name>Language: English</span>
+  </button>
+  <div class="lang-menu" id="langMenu" data-lang-menu hidden>
+    <p class="lang-title">Choose a language</p>
+    <ul class="lang-list" role="menu">
+      <li><button type="button" role="menuitem" data-lang-option="en" aria-current="true"><span>English</span><small>EN</small></button></li>
+      <li><button type="button" role="menuitem" data-lang-option="rw"><span>Kinyarwanda</span><small>RW</small></button></li>
+      <li><button type="button" role="menuitem" data-lang-option="fr"><span>French</span><small>FR</small></button></li>
+      <li><button type="button" role="menuitem" data-lang-option="sw"><span>Swahili</span><small>SW</small></button></li>
+    </ul>
+    <p class="lang-note" data-lang-note hidden>Translation is not available right now. Check your connection and try again.</p>
+  </div>
+  <div id="google_translate_element" hidden></div>
+</div>

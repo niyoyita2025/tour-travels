@@ -1,0 +1,14 @@
+{% autoescape off %}Hello,
+
+{{ intro }}
+
+{{ label }}
+
+{{ code }}
+
+This code expires after {{ minutes }} minutes. Do not share it with anyone.
+
+{{ closing }}
+
+Thank you.
+{% endautoescape %}

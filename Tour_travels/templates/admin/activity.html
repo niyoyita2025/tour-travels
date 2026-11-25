@@ -1,0 +1,47 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}System activity{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div><span class="kicker">Operations</span><h1>System activity</h1>
+    <p style="color:var(--muted);margin:6px 0 0">A record of bookings, payments, accounts, roles and content changes.</p></div>
+</div>
+
+<form method="get" action="{% url 'admin_activity' %}" class="filter-bar" style="grid-template-columns:1fr auto">
+  <div class="field"><label for="action">Show</label>
+    <select class="input" id="action" name="action">
+      <option value="">Everything</option>
+      <option value="booking"{% if action == 'booking' %} selected{% endif %}>Bookings</option>
+      <option value="payment"{% if action == 'payment' %} selected{% endif %}>Payments</option>
+      <option value="account"{% if action == 'account' %} selected{% endif %}>Client accounts</option>
+      <option value="customer"{% if action == 'customer' %} selected{% endif %}>Customer changes</option>
+      <option value="admin"{% if action == 'admin' %} selected{% endif %}>Administrator access</option>
+      <option value="content"{% if action == 'content' %} selected{% endif %}>Website content</option>
+      <option value="inquiry"{% if action == 'inquiry' %} selected{% endif %}>Enquiries</option>
+      <option value="notification"{% if action == 'notification' %} selected{% endif %}>Notifications</option>
+    </select>
+  </div>
+  <button class="btn btn-dark" type="submit">Apply</button>
+</form>
+
+{% if page.object_list %}
+  <div class="panel table-wrap">
+    <table>
+      <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Details</th></tr></thead>
+      <tbody>
+        {% for entry in page %}
+          <tr>
+            <td style="white-space:nowrap">{{ entry.created_at|date:"j M Y, H:i" }}</td>
+            <td>{{ entry.actor.username|default:"System / visitor" }}</td>
+            <td><code>{{ entry.action }}</code></td>
+            <td>{{ entry.description }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include '_pagination.html' %}
+{% else %}
+  <div class="empty">No activity recorded for this filter.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Destinations{% endblock %}
+{% block meta_description %}Explore the places in Kigali and Rwanda: photos, maps and the story of each place.{% endblock %}
+{% block body_attrs %}class="page-destinations"{% endblock %}
+
+{% block content %}
+<section class="dest-hero has-bg"{% if backgrounds.destinations_page %} style="background-image:linear-gradient(rgba(10,40,33,.82),rgba(10,40,33,.82)),url('{{ backgrounds.destinations_page }}')"{% endif %}><div class="container">
+  <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / Destinations</div>
+  <span class="dest-eyebrow">Places to explore</span>
+  <h1>Destinations</h1>
+  <p>Discover the places: their photos, locations, maps and what makes each one special.</p>
+</div></section>
+
+<section class="dest-section"><div class="container">
+  <form class="dest-search" method="get" action="{% url 'destinations' %}" role="search">
+    <label class="visually-hidden" for="q">Search places</label>
+    <input class="input" id="q" name="q" value="{{ q }}" placeholder="Search a place, location or memorial">
+    <button class="btn btn-dark" type="submit">Search</button>
+  </form>
+
+  {% if page.object_list %}
+    <div class="dest-grid">{% for destination in page %}{% include '_destination_card.html' %}{% endfor %}</div>
+    {% include '_pagination.html' %}
+  {% else %}
+    <div class="empty">No destinations match “{{ q }}”. <a class="linkish" href="{% url 'destinations' %}">Show all</a></div>
+  {% endif %}
+</div></section>
+{% endblock %}

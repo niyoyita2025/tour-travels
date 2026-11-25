@@ -1,0 +1,25 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% comment %}Client sidebar: tours, bookings, payments and the client's own account.{% endcomment %}
+
+{% block sidebar %}
+  <p class="dash-group">Overview</p>
+  <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">My dashboard</a>
+
+  <p class="dash-group">Explore</p>
+  <a href="{% url 'destinations' %}">Destinations</a>
+  <a href="{% url 'packages' %}" class="{% if request.resolver_match.url_name == 'packages' %}active{% endif %}">Browse &amp; search tours</a>
+
+  <p class="dash-group">My trips</p>
+  <a href="{% url 'booking_history' %}" class="{% if request.resolver_match.url_name == 'booking_history' or request.resolver_match.url_name == 'booking_detail' %}active{% endif %}">My bookings</a>
+  <a href="{% url 'my_payments' %}" class="{% if request.resolver_match.url_name == 'my_payments' %}active{% endif %}">Payments</a>
+  <a href="{% url 'my_reviews' %}" class="{% if request.resolver_match.url_name == 'my_reviews' %}active{% endif %}">My reviews</a>
+  <a href="{% url 'notifications' %}" class="{% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">Notifications {% if unread_count %}<span class="badge">{{ unread_count }}</span>{% endif %}</a>
+
+  <p class="dash-group">Help</p>
+  <a href="{% url 'contact' %}" class="{% if request.resolver_match.url_name == 'contact' %}active{% endif %}">Contact the team</a>
+  <a href="{% url 'faq' %}">FAQ</a>
+
+  <p class="dash-group">Account</p>
+  <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}">My profile</a>
+  <a href="{% url 'password_change' %}" class="{% if request.resolver_match.url_name == 'password_change' %}active{% endif %}">Change password</a>
+{% endblock %}

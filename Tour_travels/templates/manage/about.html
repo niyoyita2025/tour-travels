@@ -1,0 +1,35 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}About page{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Website pages</span>
+    <h1>About page</h1>
+    <p style="color:var(--muted);margin:6px 0 0">The heading and main text at the top of the About page. Add or change the blocks of text and photos below it under About sections.</p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a class="btn btn-light" href="{% url 'content_list' 'about_sections' %}">Manage About sections →</a>
+    <a class="btn btn-light" href="{% url 'about' %}">View page</a>
+  </div>
+</div>
+
+<div class="layout-2">
+  <form class="form-card" method="post" action="{% url 'about_manage' %}" novalidate>
+    {% csrf_token %}
+    <h2>Heading and main text</h2>
+    <div class="form-grid">{% include '_form_fields.html' %}</div>
+    <div class="form-foot"><button class="btn btn-dark" type="submit">Save About page</button></div>
+  </form>
+
+  <aside class="panel">
+    <h2>Sections on the page</h2>
+    {% for section in sections %}
+      <div class="notif"><strong>{{ section.heading }}</strong><small>{% if section.is_active %}Shown{% else %}Hidden{% endif %} · order {{ section.order }}{% if section.image %} · has a photo{% endif %}</small></div>
+    {% empty %}
+      <p style="color:var(--muted)">No sections yet. <a class="linkish" href="{% url 'content_new' 'about_sections' %}">Add a section</a>.</p>
+    {% endfor %}
+    <p style="margin-top:14px"><a class="linkish" href="{% url 'content_new' 'about_sections' %}">+ Add a section with text and a photo</a></p>
+  </aside>
+</div>
+{% endblock %}

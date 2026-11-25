@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Contact us{% endblock %}
+
+{% block content %}
+<section class="page-hero has-bg"{% if backgrounds.contact %} style="background-image:linear-gradient(rgba(18,61,50,.86),rgba(18,61,50,.86)),url('{{ backgrounds.contact }}')"{% endif %}><div class="container">
+  <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / Contact</div>
+  <h1>Let's plan your visit</h1>
+  <p>Send us your questions or travel plans. We reply by email.</p>
+</div></section>
+
+<section class="page-section"><div class="container booking-wrap">
+  <aside class="booking-aside">
+    <span class="eyebrow">Get in touch</span>
+    <h2>We would love to hear from you.</h2>
+    <p>{{ site.contact_intro }}</p>
+
+    <div class="contact-cards">
+      {% if site.contact_phone %}
+        <div class="contact-card"><div><span class="kind">Phone</span><div class="value"><a href="tel:{{ site.contact_phone|cut:' ' }}">{{ site.contact_phone }}</a></div></div></div>
+      {% endif %}
+      {% if site.contact_email %}
+        <div class="contact-card"><div><span class="kind">Email</span><div class="value"><a href="mailto:{{ site.contact_email }}">{{ site.contact_email }}</a></div></div></div>
+      {% endif %}
+      {% if site.contact_address %}
+        <div class="contact-card"><div><span class="kind">Address</span><div class="value">{{ site.contact_address }}</div></div></div>
+      {% endif %}
+      {% if whatsapp_number %}
+        <div class="contact-card"><div><span class="kind">WhatsApp</span><div class="value"><a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener noreferrer">Chat with us on WhatsApp ↗</a></div></div></div>
+      {% endif %}
+      {% for detail in contact_details %}
+        <div class="contact-card"><div><span class="kind">{{ detail.get_kind_display }}{% if detail.label %} · {{ detail.label }}{% endif %}</span>
+          <div class="value">{% if detail.kind == 'email' %}<a href="mailto:{{ detail.value }}">{{ detail.value }}</a>{% elif detail.kind == 'phone' %}<a href="tel:{{ detail.value|cut:' ' }}">{{ detail.value }}</a>{% elif detail.kind == 'whatsapp' %}<a href="https://wa.me/{{ detail.value|cut:' '|cut:'+'|cut:'-' }}" target="_blank" rel="noopener noreferrer">{{ detail.value }}</a>{% else %}{{ detail.value|linebreaksbr }}{% endif %}</div>
+        </div></div>
+      {% endfor %}
+    </div>
+
+    <div class="notice" style="margin-top:20px">Please do not send passport, payment-card or other sensitive details through this form.</div>
+  </aside>
+
+  <div class="form-card">
+    <h2>Send a message</h2>
+    <p>Fields marked * are required. Your message is saved and reaches our team by email.</p>
+    <form method="post" action="{% url 'contact' %}" novalidate>
+      {% csrf_token %}
+      <div class="form-grid">{% include '_form_fields.html' %}</div>
+      <div class="form-foot">
+        <button class="btn btn-dark" type="submit">Send message</button>
+      </div>
+    </form>
+  </div>
+</div></section>
+{% endblock %}

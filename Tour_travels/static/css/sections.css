@@ -1,0 +1,185 @@
+/* Public page sections: managed background images, About, Details, Contact and the booking summary. */
+
+/* Background images set by the administrator (inline style sets the image; these keep it framed well) */
+.has-bg { background-size: cover; background-position: center; background-repeat: no-repeat; }
+.page-hero.has-bg { border-bottom: 0; }
+.page-hero.has-bg::after { content: ""; }
+
+/* About page */
+.about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; }
+.about-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 7px 25px rgba(25, 50, 40, .06); display: flex; flex-direction: column; }
+.about-card .about-photo { height: 200px; background: linear-gradient(135deg, var(--forest2), var(--forest)) center/cover; }
+.about-card .about-body { padding: 22px; }
+.about-card h3 { margin: 0 0 8px; color: var(--forest); font-size: 1.2rem; }
+.about-card p { margin: 0; color: #3e4a44; font-size: .95rem; white-space: pre-line; }
+.about-lead { font-size: 1.05rem; color: #3e4a44; white-space: pre-line; }
+
+/* Details page */
+.details-hero-text { max-width: 760px; }
+.details-body { white-space: pre-line; color: #3e4a44; line-height: 1.75; }
+.details-block { margin-top: 48px; }
+.details-block > h2 { color: var(--forest); font-size: 1.7rem; letter-spacing: -.03em; margin: 0 0 18px; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.gallery-item { margin: 0; border-radius: 18px; overflow: hidden; background: white; box-shadow: 0 7px 25px rgba(25, 50, 40, .08); }
+.gallery-item img { width: 100%; height: 190px; object-fit: cover; transition: transform .35s ease; }
+.gallery-item:hover img { transform: scale(1.04); }
+.gallery-item figcaption { padding: 10px 14px; font-size: .88rem; color: var(--muted); }
+.book-grid, .link-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.book-card, .link-card { background: white; border-radius: 18px; padding: 20px; box-shadow: 0 7px 25px rgba(25, 50, 40, .06); border: 1px solid var(--line); transition: transform .2s ease, box-shadow .2s ease; }
+.book-card:hover, .link-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.book-card h3, .link-card h3 { margin: 0 0 4px; color: var(--forest); font-size: 1.05rem; }
+.book-card .author { color: var(--muted); font-size: .85rem; margin: 0 0 8px; }
+.book-card p, .link-card p { color: #3e4a44; font-size: .92rem; margin: 0 0 12px; }
+.link-card a.external { font-weight: 800; color: var(--forest2); }
+.detail-section-card { background: white; border-radius: 18px; padding: 22px 24px; border-left: 4px solid var(--gold); box-shadow: 0 7px 25px rgba(25, 50, 40, .06); margin-bottom: 14px; }
+.detail-section-card h3 { margin: 0 0 8px; color: var(--forest); }
+.detail-section-card div { white-space: pre-line; color: #3e4a44; }
+
+/* Contact page */
+.contact-cards { display: grid; gap: 12px; margin-top: 18px; }
+.contact-card { display: flex; gap: 12px; align-items: flex-start; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .16); border-radius: 16px; padding: 14px 16px; }
+.contact-card .kind { font-size: .7rem; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.contact-card .value { color: #fff; word-break: break-word; }
+.contact-card a { color: #fff; }
+
+/* Booking summary (step 2 of the booking) */
+.summary-card { background: white; border-radius: 22px; padding: 30px; box-shadow: var(--shadow); max-width: 760px; margin: 0 auto; }
+.summary-card h1 { color: var(--forest); font-size: 1.9rem; margin: 0 0 6px; letter-spacing: -.03em; }
+.summary-table { width: 100%; border-collapse: collapse; margin: 18px 0; }
+.summary-table th, .summary-table td { text-align: left; padding: 11px 6px; border-bottom: 1px solid var(--line); font-size: .95rem; }
+.summary-table th { width: 40%; color: var(--muted); font-weight: 700; }
+.summary-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+
+/* ===== Destinations: its own identity (earthy green, map-led tiles) ===== */
+.dest-hero {
+  background: linear-gradient(135deg, #0f3b33 0%, #1d6a58 100%) center/cover;
+  color: #fff; padding: 64px 0 56px; position: relative; overflow: hidden;
+}
+.dest-hero::after { content: ""; position: absolute; right: -60px; top: -60px; width: 260px; height: 260px;
+  border-radius: 50%; border: 2px solid rgba(255, 255, 255, .08); }
+.dest-hero h1 { font-size: clamp(2.2rem, 4.6vw, 3.6rem); margin: 8px 0 10px; letter-spacing: -.04em; }
+.dest-hero p { color: #cfe6dd; max-width: 640px; margin: 0; }
+.dest-hero .breadcrumbs { color: #bcd9cd; }
+.dest-hero .breadcrumbs a { color: #9fe0c6; }
+.dest-eyebrow { display: inline-block; color: #9fe0c6; font-size: .78rem; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
+.dest-section { padding: 56px 0 84px; background: #f6f5ef; }
+.dest-search { display: flex; gap: 10px; max-width: 560px; margin: 0 0 30px; }
+.dest-search .input { flex: 1; }
+.dest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 22px; }
+.dest-tile { background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 8px 26px rgba(15, 59, 51, .08);
+  border: 1px solid #e3e9e4; display: flex; flex-direction: column; transition: transform .25s ease, box-shadow .25s ease; }
+.dest-tile:hover { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(15, 59, 51, .16); }
+.dest-tile-img { position: relative; height: 200px; display: block; background: linear-gradient(135deg, #1d6a58, #0f3b33) center/cover; }
+.dest-tile-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 55%, rgba(0, 0, 0, .35)); }
+.dest-loc-badge { position: absolute; left: 14px; bottom: 12px; z-index: 1; background: rgba(255, 255, 255, .95); color: #0f3b33;
+  padding: 5px 12px; border-radius: 999px; font-size: .78rem; font-weight: 800; }
+.dest-tile-body { padding: 20px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.dest-tile-body h3 { margin: 0; font-size: 1.15rem; color: #0f3b33; line-height: 1.25; }
+.dest-desc { margin: 0; color: #4d5d56; font-size: .92rem; line-height: 1.6; }
+.dest-tile-actions { margin-top: auto; padding-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.dest-map { font-weight: 800; color: #1d6a58; font-size: .88rem; }
+.dest-map:hover { text-decoration: underline; }
+.dest-detail { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 36px; align-items: start; }
+.dest-article, .dest-map-card { background: #fff; border-radius: 22px; padding: 30px; box-shadow: 0 8px 26px rgba(15, 59, 51, .08); border: 1px solid #e3e9e4; }
+.dest-article h2, .dest-map-card h2 { color: #0f3b33; font-size: 1.5rem; margin: 0 0 14px; letter-spacing: -.02em; }
+.dest-text { color: #3d4d46; line-height: 1.8; font-size: 1rem; }
+.dest-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 24px 0 0; }
+.dest-map-frame { border-radius: 16px; overflow: hidden; border: 1px solid #e3e9e4; aspect-ratio: 4 / 3; background: #e9efec; }
+.dest-map-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+.dest-map-note { color: #5a6b64; font-size: .88rem; margin: 12px 0 0; }
+
+/* ===== Tours: its own identity (gold accent, booking-first cards) ===== */
+.tour-hero { background: linear-gradient(120deg, #1a1a14 0%, #3a2e12 100%) center/cover; color: #fff; padding: 64px 0 56px; }
+.tour-hero h1 { font-size: clamp(2.2rem, 4.6vw, 3.6rem); margin: 8px 0 10px; letter-spacing: -.04em; }
+.tour-hero p { color: #efe3c4; max-width: 660px; margin: 0 0 24px; }
+.tour-hero .breadcrumbs { color: #e7d9b2; }
+.tour-hero .breadcrumbs a { color: #f4cf72; }
+.tour-eyebrow { display: inline-block; color: #f4cf72; font-size: .78rem; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
+.tour-section { padding: 52px 0 84px; background: #fbf7ec; }
+.tour-filter { display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr 1.2fr auto; gap: 12px; align-items: end;
+  background: #fff; padding: 18px; border-radius: 18px; box-shadow: 0 8px 24px rgba(92, 70, 20, .08); margin-bottom: 26px; border: 1px solid #efe5c9; }
+.tour-filter .field label { font-size: .75rem; color: #6b5a2c; font-weight: 750; }
+.tour-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 24px; }
+.tour-card { background: #fff; border-radius: 22px; overflow: hidden; border: 1px solid #efe5c9; box-shadow: 0 8px 24px rgba(92, 70, 20, .07);
+  display: flex; flex-direction: column; transition: transform .25s ease, box-shadow .25s ease; }
+.tour-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(92, 70, 20, .16); }
+.tour-card-img { position: relative; height: 190px; display: block; background: linear-gradient(135deg, #b8861f, #5b4418) center/cover; }
+.tour-cat-badge { position: absolute; left: 14px; top: 14px; background: #fff; color: #5b4418; padding: 5px 12px; border-radius: 999px; font-size: .75rem; font-weight: 850; }
+.tour-card-body { padding: 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.tour-card-body h3 { margin: 0; font-size: 1.18rem; line-height: 1.25; }
+.tour-card-body h3 a { color: #3b2f12; }
+.tour-summary { margin: 0; color: #5d5230; font-size: .92rem; line-height: 1.55; }
+.tour-facts { display: flex; flex-wrap: wrap; gap: 8px; font-size: .8rem; color: #6b5a2c; font-weight: 700; }
+.tour-facts span { background: #f7f0da; padding: 4px 10px; border-radius: 999px; }
+.tour-next { margin-top: 2px; }
+.tour-card-foot { margin-top: auto; padding-top: 12px; border-top: 1px dashed #e6d9b4; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.tour-price { font-weight: 850; color: #3b2f12; font-size: 1.15rem; }
+.tour-price small { color: #8a7a4b; font-weight: 600; font-size: .78rem; }
+.page-tours .cat-chip.is-active { background: #b8861f; border-color: #b8861f; color: #fff; }
+.page-tours .cat-chip:hover { border-color: #b8861f; }
+.page-tours .btn-primary { background: #e6b85c; color: #2d220b; }
+
+@media (max-width: 900px) {
+  .dest-detail { grid-template-columns: 1fr; }
+  .tour-filter { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .dest-grid, .tour-grid { grid-template-columns: 1fr; }
+  .tour-filter { grid-template-columns: 1fr; }
+  .dest-search { flex-direction: column; }
+  .dest-article, .dest-map-card { padding: 22px; }
+}
+
+/* Category chips on the tours page: one link per category, same look as the place links */
+.cat-chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+.cat-chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 999px;
+  background: #fff; color: var(--forest); border: 1px solid var(--line);
+  font-weight: 750; font-size: .9rem; transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.cat-chip:hover { transform: translateY(-2px); border-color: var(--forest2); }
+.cat-chip:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.cat-chip.is-active { background: var(--forest); color: #fff; border-color: var(--forest); box-shadow: 0 8px 18px rgba(18, 61, 50, .22); }
+.cat-count {
+  min-width: 22px; padding: 1px 7px; border-radius: 999px; background: #f1efe7; color: var(--forest);
+  font-size: .75rem; font-weight: 850; text-align: center;
+}
+.cat-chip.is-active .cat-count { background: rgba(255, 255, 255, .18); color: #fff; }
+
+/* Tours & places hub: one page with the places to visit and the tours to book */
+.hub-hero { padding-bottom: 64px; }
+.hub-jump-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+.hub-jump-links .btn-outline { border-color: rgba(255, 255, 255, .5); }
+.hub { scroll-margin-top: 90px; }
+.hub-alt { background: #f1eee5; }
+.hub-head { max-width: 720px; margin-bottom: 30px; }
+.hub-head h2 { font-size: clamp(1.8rem, 3.4vw, 2.6rem); line-height: 1.15; letter-spacing: -.03em; color: var(--forest); margin: 8px 0 8px; }
+.hub-head p { color: var(--muted); margin: 0; }
+.hub-head .btn { margin-top: 14px; }
+.place-card .card-img { height: 170px; }
+.place-meta { margin: 2px 0 6px; }
+.place-meta .pill { font-size: .75rem; }
+.place-card .card-foot { flex-wrap: wrap; }
+.tour-places { margin: 0 0 8px; font-size: .86rem; color: var(--muted); }
+.tour-places strong { color: var(--forest); }
+
+/* Destinations: booking entry points and next available dates (same colours as the calendar) */
+.dest-book { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 4px; }
+.dest-book .btn { margin-top: 2px; }
+.tour-count { color: var(--muted); font-size: .78rem; }
+.slot-chip {
+  display: inline-block; padding: 6px 11px; border-radius: 999px; font-size: .8rem; font-weight: 750;
+  background: #e4f2e9; color: #1f6b3d; border: 1px solid #c4e2cf; line-height: 1.35;
+}
+.slot-chip.is-limited { background: #fff1cc; color: #7a5c17; border-color: #ecd9a7; }
+.slot-chip.is-full { background: #fbe3e0; color: #8a2a1f; border-color: #efc8c3; }
+.side-card .offer { border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 12px; display: grid; gap: 8px; background: #fbfaf6; }
+.side-card .offer strong { color: var(--forest); }
+.side-card .offer .btn { margin-top: 4px; }
+
+@media (max-width: 650px) {
+  .gallery-grid { grid-template-columns: 1fr 1fr; }
+  .gallery-item img { height: 130px; }
+  .summary-card { padding: 20px; }
+  .summary-table th { width: 45%; }
+}

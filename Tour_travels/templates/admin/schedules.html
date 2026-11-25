@@ -1,0 +1,67 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Tour dates & capacity{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Bookings &amp; calendar</span>
+    <h1>Tour dates &amp; capacity</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Each row is one bookable date and time. Capacity is the maximum number of clients for that slot.</p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a class="btn btn-light" href="{% url 'admin_calendar' %}">Calendar view</a>
+    <a class="btn btn-light" href="{% url 'admin_schedule_bulk' %}">Add many dates</a>
+    <a class="btn btn-dark" href="{% url 'admin_schedule_new' %}">Add a date</a>
+  </div>
+</div>
+
+<form method="get" action="{% url 'admin_schedules' %}" class="filter-bar" style="grid-template-columns:1fr 1fr auto">
+  <div class="field"><label for="tour">Tour</label>
+    <select class="input" id="tour" name="tour">
+      <option value="">All tours</option>
+      {% for t in tours %}<option value="{{ t.pk }}"{% if tour == t.pk|stringformat:"s" %} selected{% endif %}>{{ t.title }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field"><label for="show">Show</label>
+    <select class="input" id="show" name="show">
+      <option value="upcoming"{% if show == 'upcoming' %} selected{% endif %}>Upcoming</option>
+      <option value="past"{% if show == 'past' %} selected{% endif %}>Past</option>
+      <option value="all"{% if show == 'all' %} selected{% endif %}>All</option>
+    </select>
+  </div>
+  <button class="btn btn-dark" type="submit">Filter</button>
+</form>
+
+{% if schedules %}
+  <div class="panel table-wrap">
+    <table>
+      <thead><tr><th>Date</th><th>Time</th><th>Tour</th><th>Capacity</th><th>Booked</th><th>Seats left</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for s in schedules %}
+          <tr>
+            <td>{{ s.date|date:"D j M Y" }}</td>
+            <td>{{ s.start_time|time:"H:i" }}</td>
+            <td>{{ s.package.title }}</td>
+            <td>{{ s.capacity }}</td>
+            <td>{{ s.seats_booked }}{% if s.booking_count %} <small style="color:var(--muted)">({{ s.booking_count }} booking{{ s.booking_count|pluralize }})</small>{% endif %}</td>
+            <td><strong>{{ s.seats_remaining }}</strong></td>
+            <td>
+              {% if not s.is_open %}<span class="status cancelled">Closed</span>
+              {% elif s.seats_remaining == 0 %}<span class="status cancelled">Full</span>
+              {% elif s.has_started %}<span class="status expired">Started</span>
+              {% else %}<span class="status confirmed">Open</span>{% endif %}
+            </td>
+            <td style="white-space:nowrap">
+              <a class="btn btn-light btn-sm" href="{% url 'admin_schedule_edit' s.pk %}">Edit</a>
+              <a class="linkish" href="{% url 'admin_bookings' %}?q={{ s.package.title|urlencode }}">Bookings</a>
+              <form class="inline-form" method="post" action="{% url 'admin_schedule_delete' s.pk %}" onsubmit="return confirm('Delete this date? This cannot be undone.');">{% csrf_token %}<button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="empty">No tour dates match these filters. <a class="linkish" href="{% url 'admin_schedule_bulk' %}">Add dates</a>.</div>
+{% endif %}
+{% endblock %}

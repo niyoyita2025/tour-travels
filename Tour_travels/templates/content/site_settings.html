@@ -1,0 +1,21 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Site settings{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'content_index' %}">← Website content</a></span>
+    <h1>Site text, images and settings</h1>
+  </div>
+</div>
+<p style="color:var(--muted);margin-top:-10px">These fields control the text and photos on the home, about and contact pages, and the footer: social media links, the "Hosted by" credit, contact details, and the payment phone number and instructions. Save to publish.</p>
+
+<form class="form-card" method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  <div class="form-grid">{% include '_form_fields.html' %}</div>
+  <div class="form-foot">
+    <button class="btn btn-dark" type="submit">Save and publish</button>
+    <small>Upload photos as JPG, PNG or WebP, up to 5 MB, or paste a web address.</small>
+  </div>
+</form>
+{% endblock %}

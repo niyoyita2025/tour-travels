@@ -1,0 +1,59 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Bookings{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Bookings</span>
+    <h1>Bookings &amp; reservations</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Every booking, with its date, starting time, duration and status. New bookings appear here straight away.</p>
+  </div>
+  <a class="btn btn-dark" href="{% url 'admin_calendar' %}">Open the booking calendar</a>
+</div>
+
+<form method="get" action="{% url 'admin_bookings' %}" class="filter-bar" style="grid-template-columns:2fr 1fr auto">
+  <div class="field"><label for="q">Search</label><input class="input" id="q" name="q" value="{{ q }}" placeholder="Reference, name, email or tour"></div>
+  <div class="field"><label for="status">Status</label>
+    <select class="input" id="status" name="status">
+      <option value="">All statuses</option>
+      {% for value, label in status_choices %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-dark" type="submit">Filter</button>
+</form>
+
+{% if page.object_list %}
+  <div class="panel table-wrap">
+    <table>
+      <thead><tr><th>Reference</th><th>Customer</th><th>Tour</th><th>Date</th><th>Starts</th><th>Hours</th><th>Guests</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for booking in page %}
+          <tr>
+            <td><a class="linkish" href="{{ booking.get_absolute_url }}">{{ booking.reference }}</a></td>
+            <td>{{ booking.full_name }}<br><small>{{ booking.email }} · {{ booking.phone }}</small></td>
+            <td>{{ booking.package.title }}{% if booking.destination %}<br><small>Visiting: {{ booking.destination.name }}</small>{% endif %}</td>
+            <td>{{ booking.travel_date|date:"j M Y" }}</td>
+            <td>{% if booking.schedule %}{{ booking.schedule.start_time|time:"H:i" }}{% else %}—{% endif %}</td>
+            <td>{{ booking.duration_hours }}</td>
+            <td>{{ booking.guests }}</td>
+            <td>USD {{ booking.total_price }}<br><span class="status {{ booking.payment_status }}">{{ booking.get_payment_status_display }}</span></td>
+            <td><span class="status {{ booking.status }}">{{ booking.get_status_display }}</span></td>
+            <td style="white-space:nowrap">
+              <a class="btn btn-light btn-sm" href="{% url 'admin_booking_edit' booking.pk %}">Edit</a>
+              {% if booking.status == 'pending' %}
+                <form class="inline-form" method="post" action="{% url 'admin_booking_status' booking.pk %}">{% csrf_token %}<input type="hidden" name="status" value="confirmed"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-dark btn-sm" type="submit">Confirm</button></form>
+              {% endif %}
+              {% if booking.status == 'pending' or booking.status == 'confirmed' %}
+                <form class="inline-form" method="post" action="{% url 'admin_booking_status' booking.pk %}" onsubmit="return confirm('Cancel this booking? The seats are released and the client is notified.');">{% csrf_token %}<input type="hidden" name="status" value="cancelled"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-danger btn-sm" type="submit">Cancel</button></form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include '_pagination.html' %}
+{% else %}
+  <div class="empty">No bookings match these filters.</div>
+{% endif %}
+{% endblock %}

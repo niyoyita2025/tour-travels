@@ -1,0 +1,97 @@
+{% extends layout %}
+{% load static %}
+{% block title %}My profile{% endblock %}
+{% block extra_head %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/profile.css' %}">{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">{{ dash_label }}</span>
+    <h1>My profile</h1>
+  </div>
+</div>
+
+<section class="profile-hero" aria-labelledby="profileName">
+  <div class="profile-hero-photo">
+    {% include '_avatar.html' with photo=profile.photo_url initials=me_initials size='xl' %}
+  </div>
+  <div class="profile-hero-text">
+    <h2 id="profileName">{{ me_name }}</h2>
+    <p class="profile-role">{{ dash_label }} · Member since {{ user.date_joined|date:"F Y" }}</p>
+    <dl class="profile-facts">
+      <div><dt>Email</dt><dd>{{ user.email|default:"Not set" }}</dd></div>
+      <div><dt>Phone</dt><dd>{{ profile.phone|default:"Not added yet" }}</dd></div>
+      <div><dt>Country</dt><dd>{{ profile.country|default:"Not added yet" }}</dd></div>
+    </dl>
+    {% if profile.bio %}
+      <p class="profile-bio">{{ profile.bio|linebreaksbr }}</p>
+    {% else %}
+      <p class="profile-bio profile-bio-empty">Add a short bio so our guides and other travellers can get to know you.</p>
+    {% endif %}
+  </div>
+</section>
+
+<div class="layout-2 profile-grid">
+  <form class="form-card" method="post" action="{% url 'profile' %}" enctype="multipart/form-data" novalidate data-busy-text="Saving your profile…">
+    {% csrf_token %}
+    <h2>Edit profile</h2>
+    <p>Your photo, name and contact details. Bookings use your phone and country.</p>
+
+    <div class="photo-editor">
+      <div class="photo-preview" data-photo-preview>
+        {% include '_avatar.html' with photo=profile.photo_url initials=me_initials size='xl' %}
+      </div>
+      <div class="photo-controls">
+        <label class="photo-field-label" for="{{ details_form.photo.id_for_label }}">Profile photo</label>
+        {{ details_form.photo }}
+        <small class="help">JPG, PNG or WebP, up to 5 MB. It is cropped to a square for you.</small>
+        {% if profile.photo %}
+          <label class="check">{{ details_form.remove_photo }} Remove my photo</label>
+        {% endif %}
+        <p class="photo-message" data-photo-message role="status" aria-live="polite"></p>
+        {{ details_form.photo.errors }}
+      </div>
+    </div>
+
+    <div class="form-grid">
+      {% include '_field.html' with field=details_form.full_name %}
+      {% include '_field.html' with field=details_form.phone %}
+      {% include '_field.html' with field=details_form.country %}
+      <div class="field full">
+        <label for="{{ details_form.bio.id_for_label }}">{{ details_form.bio.label }}</label>
+        {{ details_form.bio }}
+        <span class="help counter" data-counter-for="{{ details_form.bio.id_for_label }}">0 / {{ details_form.bio.field.max_length }}</span>
+        {{ details_form.bio.errors }}
+      </div>
+    </div>
+    {% if details_form.non_field_errors %}<div class="form-errors">{{ details_form.non_field_errors }}</div>{% endif %}
+    <div class="form-foot"><button class="btn btn-dark" type="submit">Save profile</button></div>
+  </form>
+
+  <div class="stack">
+    <section class="panel email-panel" aria-labelledby="emailHeading">
+      <h2 id="emailHeading">Email address</h2>
+      <p class="help-line">Current address: <strong>{{ user.email }}</strong></p>
+      {% if pending_email %}
+        <div class="notice">A change to <strong>{{ pending_email }}</strong> is waiting for your code. <a class="linkish" href="{% url 'profile_email_verify' %}">Enter the code</a></div>
+      {% endif %}
+      <form method="post" action="{% url 'profile_email' %}" novalidate data-busy-text="Sending your code…">
+        {% csrf_token %}
+        {% include '_field.html' with field=email_form.new_email %}
+        <div class="form-foot"><button class="btn btn-light" type="submit">Send confirmation code</button></div>
+      </form>
+      <p class="help-line">We email a six-digit code to the new address. Your address changes only after you enter it.</p>
+    </section>
+
+    <div class="panel quick-links">
+      <h2>Account</h2>
+      <p class="help-line">Username: <strong>{{ user.username }}</strong></p>
+      <p class="help-line">Account type: <strong>{{ dash_label }}</strong></p>
+      <a href="{% url 'password_change' %}">Change password <span>→</span></a>
+      <a href="{{ dash_home }}">Back to dashboard <span>→</span></a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/profile.js' %}" defer></script>{% endblock %}

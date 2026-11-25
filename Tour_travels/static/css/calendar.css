@@ -1,0 +1,78 @@
+/* Booking calendar: status colours, month grid, slot list. Used on public and admin calendars. */
+
+.cal-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr); gap: 28px; align-items: start; }
+.cal-card { background: white; border-radius: 20px; padding: 22px; box-shadow: 0 7px 25px rgba(25, 50, 40, .06); margin-bottom: 18px; }
+.cal-card h3 { margin: 0 0 8px; color: var(--forest); font-size: 1.15rem; }
+.cal-card p { color: var(--muted); font-size: .92rem; margin: 0 0 10px; }
+.cal-instructions { background: #e5eff5; border: 1px solid #c5dbe7; color: #245a7a; border-radius: 14px; padding: 14px 16px; font-size: .92rem; margin-bottom: 16px; }
+
+/* Legend */
+.cal-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; font-size: .85rem; color: #35453e; font-weight: 650; }
+.cal-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.sw { width: 14px; height: 14px; border-radius: 5px; display: inline-block; border: 1px solid rgba(0, 0, 0, .06); }
+.sw-available, .day-available { --c-bg: #e4f2e9; --c-ink: #1f6b3d; --c-dot: #2fa35c; }
+.sw-limited, .day-limited { --c-bg: #fff1cc; --c-ink: #7a5c17; --c-dot: #e0a526; }
+.sw-full, .day-full { --c-bg: #fbe3e0; --c-ink: #8a2a1f; --c-dot: #d2473a; }
+.sw-none, .day-none, .day-past { --c-bg: #efefec; --c-ink: #8a8f8c; --c-dot: #b6bab7; }
+.sw { background: var(--c-bg, #efefec); }
+.sw-available { background: #e4f2e9; }
+.sw-limited { background: #fff1cc; }
+.sw-full { background: #fbe3e0; }
+.sw-none { background: #efefec; }
+
+/* Month navigation */
+.cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.cal-nav h2 { margin: 0; color: var(--forest); font-size: 1.35rem; letter-spacing: -.02em; text-align: center; flex: 1; }
+.cal-nav .is-disabled { opacity: .4; pointer-events: none; }
+
+/* Grid */
+.cal-card.cal-month { padding: 18px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.cal-head div { text-align: center; font-size: .72rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 6px 0; }
+.cal-day {
+  position: relative; min-height: 74px; border-radius: 14px; padding: 8px;
+  background: var(--c-bg, #efefec); color: var(--c-ink, #8a8f8c);
+  display: flex; flex-direction: column; justify-content: space-between; gap: 4px;
+  border: 2px solid transparent; transition: transform .15s, box-shadow .15s, border-color .15s;
+  text-align: left;
+}
+.cal-day .d { font-weight: 850; font-size: 1rem; }
+.cal-day .meta { font-size: .68rem; font-weight: 700; line-height: 1.25; }
+.cal-day .dot { position: absolute; top: 9px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--c-dot, #b6bab7); }
+a.cal-day:hover, a.cal-day:focus-visible { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(25, 50, 40, .14); border-color: var(--c-dot, #b6bab7); outline: none; }
+.cal-day.is-disabled { cursor: not-allowed; }
+.cal-day.is-outside { background: transparent; color: #c5c9c6; border-color: transparent; }
+.cal-day.is-outside .dot { display: none; }
+.cal-day.is-today { border-color: var(--forest); }
+.cal-day.is-today .d::after { content: " · today"; font-size: .6rem; font-weight: 800; color: var(--forest); }
+.cal-day.is-selected { border-color: var(--forest); box-shadow: 0 0 0 3px rgba(18, 61, 50, .18); }
+.cal-day.day-full, .cal-day.day-past, .cal-day.day-none { cursor: not-allowed; }
+.cal-day.is-disabled { pointer-events: none; }
+
+/* Slot list */
+.slot-list { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 10px; }
+.slot { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: #fbfaf6; }
+.slot.is-disabled { opacity: .6; }
+.slot strong { color: var(--forest); font-size: 1.05rem; }
+.slot small { color: var(--muted); }
+.slot-note { font-size: .8rem; color: var(--muted); margin: 6px 0 0; }
+.cal-updated { font-size: .75rem; color: var(--muted); margin-top: 10px; }
+.live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2fa35c; margin-right: 6px; animation: livepulse 2s infinite; }
+@keyframes livepulse { 0% { opacity: 1; } 50% { opacity: .3; } 100% { opacity: 1; } }
+
+/* Admin calendar extras */
+.cal-day .booked { font-size: .68rem; font-weight: 800; }
+.cal-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-bottom: 16px; }
+
+@media (max-width: 900px) {
+  .cal-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 650px) {
+  .cal-grid { gap: 4px; }
+  .cal-day { min-height: 56px; padding: 5px; border-radius: 10px; }
+  .cal-day .d { font-size: .9rem; }
+  .cal-day .meta { font-size: .58rem; }
+  .cal-head div { font-size: .62rem; letter-spacing: .02em; }
+  .cal-card { padding: 16px; }
+  .slot { flex-direction: column; align-items: flex-start; }
+}

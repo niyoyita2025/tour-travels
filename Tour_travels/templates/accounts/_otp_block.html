@@ -1,0 +1,35 @@
+{% comment %}
+  Six code boxes, a live countdown and a resend button. Shared by sign-up and password reset.
+  The boxes are separate fields, so the form also works without JavaScript.
+{% endcomment %}
+<form method="post" action="{{ action_url }}" class="otp-form" novalidate data-busy-text="Verifying…">
+  {% csrf_token %}
+  <fieldset class="otp-fieldset">
+    <legend class="sr-only">Six-digit code</legend>
+    <div class="otp-group">
+      {% for box in digit_boxes %}
+        <input class="otp-box" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1"
+               name="digit_{{ box }}" id="otp-{{ box }}" aria-label="Digit {{ forloop.counter }} of 6"
+               autocomplete="{% if forloop.first %}one-time-code{% else %}off{% endif %}"
+               {% if forloop.first %}autofocus{% endif %}>
+      {% endfor %}
+    </div>
+  </fieldset>
+  <p class="otp-meta" aria-live="polite">
+    {% if expires_in %}Code expires in <strong data-countdown-expiry data-seconds="{{ expires_in }}">{{ expires_in }} seconds</strong>.{% else %}There is no live code. Request a new one below.{% endif %}
+  </p>
+  <div class="form-foot">
+    <button class="btn btn-dark btn-block" type="submit">Verify code</button>
+  </div>
+</form>
+
+<form method="post" action="{{ resend_url }}" class="resend-form" data-busy-text="Sending a new code…">
+  {% csrf_token %}
+  <button class="btn btn-light btn-block" type="submit" data-resend data-seconds="{{ resend_in }}"
+          {% if resend_in %}disabled{% endif %}>
+    {% if resend_in %}Resend code in <span data-countdown-resend>{{ resend_in }}</span> seconds{% else %}Resend code{% endif %}
+  </button>
+</form>
+
+<p class="auth-hint">Didn't get the email? Check your spam folder. Delivery can take a few seconds.</p>
+<p class="auth-foot"><a class="linkish" href="{{ change_url }}">{{ change_text }}</a></p>

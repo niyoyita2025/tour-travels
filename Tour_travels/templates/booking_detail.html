@@ -1,0 +1,139 @@
+{% extends layout %}
+{% block title %}Booking {{ booking.reference }}{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'booking_history' %}">Bookings</a> / {{ booking.reference }}</span>
+    <h1>{{ booking.package.title }}</h1>
+    <p style="margin:6px 0 0"><span class="status {{ booking.status }}">{{ booking.get_status_display }}</span>
+      <span class="status {{ booking.payment_status }}">{{ booking.get_payment_status_display }}</span></p>
+  </div>
+</div>
+
+<div class="layout-2">
+  <div class="stack">
+    <div class="panel">
+      <h2>Booking summary</h2>
+      <dl class="summary-list">
+        <div><dt>Tour</dt><dd><a href="{{ booking.package.get_absolute_url }}">{{ booking.package.title }}</a></dd></div>
+        {% if booking.destination %}<div><dt>Destination</dt><dd><a href="{{ booking.destination.get_absolute_url }}">{{ booking.destination.name }}</a></dd></div>{% endif %}
+        <div><dt>Travel date</dt><dd>{{ booking.travel_date|date:"j F Y" }}{% if booking.schedule %} at {{ booking.schedule.start_time|time:"H:i" }}{% endif %}</dd></div>
+        <div><dt>Starting time</dt><dd>{% if booking.schedule %}{{ booking.schedule.start_time|time:"H:i" }}{% else %}—{% endif %}</dd></div>
+        <div><dt>Duration</dt><dd>{{ booking.duration_hours }} hour{{ booking.duration_hours|pluralize }}</dd></div>
+        <div><dt>Guests</dt><dd>{{ booking.guests }}</dd></div>
+        <div><dt>Customer</dt><dd>{{ booking.full_name }}{% if is_admin_user %} ({{ booking.user.username }}){% endif %}</dd></div>
+        <div><dt>Email</dt><dd>{{ booking.email }}</dd></div>
+        <div><dt>Phone</dt><dd>{{ booking.phone }}</dd></div>
+        <div><dt>Country</dt><dd>{{ booking.country }}</dd></div>
+        <div><dt>Total</dt><dd>USD {{ booking.total_price }}</dd></div>
+        {% if booking.status == 'pending' and booking.expires_at %}<div><dt>Seats held until</dt><dd>{{ booking.expires_at|date:"j M Y, H:i" }}</dd></div>{% endif %}
+      </dl>
+      {% if booking.special_requests %}<p style="margin-top:16px"><strong>Special requests:</strong> {{ booking.special_requests|linebreaksbr }}</p>{% endif %}
+      <p style="margin-top:14px;font-size:.85rem;color:var(--muted)">Booked on {{ booking.created_at|date:"j M Y, H:i" }}</p>
+    </div>
+
+    {% if is_admin_user %}
+      <div class="panel">
+        <h2>Confirm or cancel</h2>
+        <p style="color:var(--muted);font-size:.9rem">The customer is notified by email and in their notifications.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          {% for value, label in booking_status_choices %}
+            {% if value != booking.status %}
+              <form class="inline-form" method="post" action="{% url 'admin_booking_status' booking.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="{{ value }}">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button class="btn {% if value == 'cancelled' %}btn-danger{% elif value == 'confirmed' %}btn-dark{% else %}btn-light{% endif %} btn-sm" type="submit">Mark {{ label|lower }}</button>
+              </form>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% elif booking.can_cancel %}
+      <div class="panel">
+        <h2>Cancel booking</h2>
+        <p style="color:var(--muted)">You can cancel until <strong>{{ booking.cancellation_deadline|date:"j M Y, H:i" }}</strong>, which is {{ cancel_hours }} hours before the tour. Your seats are then released for other clients.</p>
+        <form method="post" action="{% url 'cancel_booking' booking.reference %}" onsubmit="return confirm('Cancel this booking? Your seats will be released.');">
+          {% csrf_token %}
+          <button class="btn btn-danger" type="submit">Cancel this booking</button>
+        </form>
+      </div>
+    {% elif booking.status == 'pending' or booking.status == 'confirmed' %}
+      <div class="panel">
+        <h2>Cancellation</h2>
+        <p style="color:var(--muted)">The cancellation period ({{ cancel_hours }} hours before the tour) has passed. Please contact us to discuss your booking.</p>
+        <a class="btn btn-light" href="{% url 'contact' %}">Contact the team</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="stack">
+    {# ----- Payment (client view) ----- #}
+    {% if not is_admin_user %}
+      <div class="panel">
+        <h2>Payment</h2>
+        <dl class="summary-list">
+          <div><dt>Payment status</dt><dd><span class="status {{ booking.payment_status }}">{{ booking.get_payment_status_display }}</span></dd></div>
+          <div><dt>Total</dt><dd>USD {{ booking.total_price }}</dd></div>
+          <div><dt>Received so far</dt><dd>USD {{ booking.amount_paid }}</dd></div>
+          <div><dt>Balance due</dt><dd>USD {{ booking.balance_due }}</dd></div>
+        </dl>
+        <div class="notice" style="margin-top:16px">
+          {{ payment_instructions }}
+          {% if site.payment_phone %}<br><strong>Phone:</strong> <a href="tel:{{ site.payment_phone|cut:' ' }}">{{ site.payment_phone }}</a>{% endif %}
+        </div>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:12px">Payment is arranged directly with the tour operator. You do not pay on the website. Your status is updated here once the team has confirmed it.</p>
+      </div>
+    {% endif %}
+
+    {# ----- Recorded payments (both roles see the same list) ----- #}
+    <div class="panel">
+      <h2>Recorded payments</h2>
+      {% if payments %}
+        <div class="table-wrap"><table>
+          <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead>
+          <tbody>
+            {% for payment in payments %}
+              <tr>
+                <td>{{ payment.created_at|date:"j M Y" }}</td>
+                <td>USD {{ payment.amount }}</td>
+                <td>{{ payment.get_method_display }}</td>
+                <td>{{ payment.transaction_reference|default:"—" }}{% if is_admin_user and payment.recorded_by %}<br><small>by {{ payment.recorded_by.username }}</small>{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table></div>
+      {% else %}
+        <p style="color:var(--muted)">No payments have been recorded yet.</p>
+      {% endif %}
+    </div>
+
+    {# ----- Administrator: payment status and recording ----- #}
+    {% if payment_status_form %}
+      <div class="panel">
+        <h2>Payment status</h2>
+        <p style="color:var(--muted);font-size:.9rem">Set this manually once payment is agreed and received. The customer is notified.</p>
+        <form method="post" action="{% url 'admin_booking_payment_status' booking.pk %}" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <div class="form-grid">{% include '_form_fields.html' with form=payment_status_form %}</div>
+          <div class="form-foot"><button class="btn btn-dark" type="submit">Save payment status</button></div>
+        </form>
+      </div>
+    {% endif %}
+
+    {% if record_form %}
+      <div class="panel">
+        <h2>Record a payment received</h2>
+        <p style="color:var(--muted);font-size:.9rem">Add an amount received by mobile money, bank transfer, cash or another agreed method. This does not change the status above; set that separately.</p>
+        <form method="post" action="{% url 'admin_record_payment' booking.pk %}" novalidate>
+          {% csrf_token %}
+          <div class="form-grid">{% include '_form_fields.html' with form=record_form %}</div>
+          <div class="form-foot"><button class="btn btn-dark" type="submit">Record payment</button></div>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

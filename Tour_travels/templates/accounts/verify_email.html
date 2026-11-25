@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Verify your email{% endblock %}
+
+{% block content %}
+<section class="auth-wrap"><div class="container">
+  <div class="auth-card">
+    <h1>Check your email</h1>
+    <p>Enter the six-digit code we sent to <strong class="masked">{{ masked_email }}</strong>. Your account becomes active once the code is accepted.</p>
+    {% include 'accounts/_otp_block.html' %}
+  </div>
+</div></section>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/otp.js' %}" defer></script>{% endblock %}

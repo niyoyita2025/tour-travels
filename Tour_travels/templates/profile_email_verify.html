@@ -1,0 +1,22 @@
+{% extends layout %}
+{% load static %}
+{% block title %}Confirm your new email{% endblock %}
+{% block extra_head %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/profile.css' %}">{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">{{ dash_label }}</span>
+    <h1>Confirm your new email</h1>
+  </div>
+</div>
+
+<div class="narrow">
+  <div class="form-card profile-verify">
+    <p>Enter the six-digit code we sent to <strong class="masked">{{ masked_email }}</strong>. Your address changes once the code is accepted. Until then, your current address stays in place.</p>
+    {% include 'accounts/_otp_block.html' %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/otp.js' %}" defer></script>{% endblock %}

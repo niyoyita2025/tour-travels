@@ -1,0 +1,133 @@
+﻿{% extends 'base.html' %}
+{% block title %}{{ package.title }}{% endblock %}
+{% block meta_description %}{{ package.summary }}{% endblock %}
+
+{% block content %}
+<section class="page-hero"><div class="container">
+  <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / <a href="{% url 'packages' %}">Tours</a> / {{ package.title }}</div>
+  <h1>{{ package.title }}</h1>
+  <p>{{ package.summary }}</p>
+</div></section>
+
+<section class="page-section"><div class="container detail-grid">
+  <div>
+    <div class="detail-hero"{% if package.photo_url %} style="background-image:url('{{ package.photo_url }}')"{% endif %}></div>
+
+    <div class="facts">
+      <div class="fact"><span>Duration</span><strong>{{ package.duration_days }} day{{ package.duration_days|pluralize }}</strong></div>
+      <div class="fact"><span>Group size</span><strong>Up to {{ package.max_guests }} guests</strong></div>
+      <div class="fact"><span>Category</span><strong>{{ package.category.name|default:"Tour" }}</strong></div>
+      <div class="fact"><span>Rating</span><strong>{% if package.average_rating %}★ {{ package.average_rating }} ({{ package.review_count }}){% else %}No reviews yet{% endif %}</strong></div>
+    </div>
+
+    <div class="detail-body">
+      <h2>What you will experience</h2>
+      <p>{{ package.description|linebreaksbr }}</p>
+      {% if package.highlight_list %}
+        <h2>Highlights</h2>
+        <ul class="highlight-list">{% for line in package.highlight_list %}<li>{{ line }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% with places=package.destinations.all %}{% if places %}
+        <h2>Places this tour visits</h2>
+        <ul class="highlight-list">
+          {% for place in places %}
+            <li><a class="linkish" href="{{ place.get_absolute_url }}">{{ place.name }}</a> · {{ place.location }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}{% endwith %}
+    </div>
+
+    <div class="detail-body" id="dates">
+      <h2>Open dates and times</h2>
+      <p style="color:var(--muted);font-size:.92rem">Choose a date, then pick your starting time and how many hours you want on the calendar. Dates change as seats are booked.</p>
+      {% if open_dates %}
+        <div class="table-wrap"><table>
+          <thead><tr><th>Date</th><th>Starts</th><th>Seats left</th><th>Availability</th><th></th></tr></thead>
+          <tbody>
+            {% for item in open_dates %}
+              <tr>
+                <td>{{ item.slot.date|date:"D j M Y" }}</td>
+                <td>{{ item.slot.start_time|time:"H:i" }}</td>
+                <td>{{ item.slot.seats_remaining }} of {{ item.slot.capacity }}</td>
+                <td><span class="slot-chip{% if item.status == 'limited' %} is-limited{% endif %}">{% if item.status == 'limited' %}Limited seats{% else %}Available{% endif %}</span></td>
+                <td><a class="btn btn-dark btn-sm" href="{% url 'tour_calendar' package.slug %}?date={{ item.slot.date|date:'Y-m-d' }}">Book this date</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table></div>
+      {% else %}
+        <div class="empty" style="padding:26px">No open dates right now. <a class="linkish" href="{% url 'contact' %}">Ask us about other dates</a>.</div>
+      {% endif %}
+    </div>
+
+    {% if my_bookings %}
+      <div class="detail-body">
+        <h2>Your bookings for this tour</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Reference</th><th>Date</th><th>Starts</th><th>Hours</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for booking in my_bookings %}
+              <tr>
+                <td>{{ booking.reference }}</td>
+                <td>{{ booking.travel_date|date:"j M Y" }}</td>
+                <td>{% if booking.schedule %}{{ booking.schedule.start_time|time:"H:i" }}{% else %}—{% endif %}</td>
+                <td>{{ booking.duration_hours }}</td>
+                <td><span class="status {{ booking.status }}">{{ booking.get_status_display }}</span></td>
+                <td><a class="linkish" href="{{ booking.get_absolute_url }}">View</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table></div>
+      </div>
+    {% endif %}
+
+    <div class="detail-body">
+      <h2>Guest reviews</h2>
+      {% if reviews %}
+        {% for review in reviews %}
+          <div class="review">
+            <div class="rating">{% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}</div>
+            <p>{{ review.comment }}</p>
+            <div class="review-meta">{{ review.user.first_name|default:review.user.username }} · {{ review.created_at|date:"j M Y" }}</div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p style="color:var(--muted)">No reviews yet. Guests can review a tour after their booking is confirmed.</p>
+      {% endif %}
+
+      {% if user.is_authenticated %}
+        {% if review_form %}
+          <div class="panel" id="write-review" style="margin-top:20px">
+            <h2>Write a review</h2>
+            <form method="post" action="{% url 'review_create' package.slug %}" novalidate>
+              {% csrf_token %}
+              <div class="form-grid">{% include '_form_fields.html' with form=review_form %}</div>
+              <div class="form-foot"><button class="btn btn-dark" type="submit">Post review</button></div>
+            </form>
+          </div>
+        {% elif user_has_reviewed %}
+          <p class="notice" style="margin-top:18px">Thank you — you have already reviewed this tour.</p>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <aside class="side-card">
+    <div class="price">USD {{ package.price }} <small>/ guest</small></div>
+    <p style="color:var(--muted);font-size:.9rem;margin:8px 0 0">Booking is a request. We confirm availability and arrangements with you.</p>
+
+    {% if next_date %}
+      <div class="offer" style="margin-top:14px">
+        <span class="slot-chip{% if next_date.status == 'limited' %} is-limited{% endif %}">Next: {{ next_date.slot.date|date:"D j M Y" }} at {{ next_date.slot.start_time|time:"H:i" }} · {{ next_date.slot.seats_remaining }} seat{{ next_date.slot.seats_remaining|pluralize }} left</span>
+        <a class="btn btn-primary btn-block" href="{% url 'tour_calendar' package.slug %}?date={{ next_date.slot.date|date:'Y-m-d' }}">Book Now →</a>
+      </div>
+    {% else %}
+      <span class="slot-chip is-full" style="margin-top:14px">No open dates right now</span>
+      <a class="btn btn-light btn-block" style="margin-top:10px" href="{% url 'tour_calendar' package.slug %}">See the calendar</a>
+    {% endif %}
+
+    <p style="font-size:.85rem;margin-top:12px">Check live availability and pick a date. You can create an account or sign in when you are ready to book, and your choice is kept.</p>
+    <a class="btn btn-light btn-block" style="margin-top:10px" href="{% url 'contact' %}?tour={{ package.slug }}">Ask a question</a>
+  </aside>
+</div></section>
+{% endblock %}

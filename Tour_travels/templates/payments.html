@@ -1,0 +1,45 @@
+{% extends layout %}
+{% block title %}Payments{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div><span class="kicker">Payments</span><h1>My payment status</h1></div>
+</div>
+
+<div class="notice" style="margin-bottom:20px">
+  {{ payment_instructions }}
+  {% if site.payment_phone %}<br><strong>Phone:</strong> <a href="tel:{{ site.payment_phone|cut:' ' }}">{{ site.payment_phone }}</a>{% endif %}
+</div>
+
+<div class="panel table-wrap">
+  <h2>By booking</h2>
+  {% if bookings %}
+    <table>
+      <thead><tr><th>Booking</th><th>Tour</th><th>Total</th><th>Received</th><th>Balance</th><th>Payment status</th></tr></thead>
+      <tbody>
+        {% for booking in bookings %}
+          <tr>
+            <td><a class="linkish" href="{{ booking.get_absolute_url }}">{{ booking.reference }}</a></td>
+            <td>{{ booking.package.title }}</td>
+            <td>USD {{ booking.total_price }}</td>
+            <td>USD {{ booking.amount_paid }}</td>
+            <td>USD {{ booking.balance_due }}</td>
+            <td><span class="status {{ booking.payment_status }}">{{ booking.get_payment_status_display }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p style="color:var(--muted)">You have no bookings, so there are no payments yet.</p>
+  {% endif %}
+</div>
+
+<div class="panel" style="margin-top:20px">
+  <h2>How payment works</h2>
+  <ol class="highlight-list">
+    <li>Submitting a booking request is free. You do not pay on the website.</li>
+    <li>Agree payment with the tour operator by phone or through the method we confirm with you.</li>
+    <li>Our team records the payment and updates the status shown here.</li>
+  </ol>
+</div>
+{% endblock %}
