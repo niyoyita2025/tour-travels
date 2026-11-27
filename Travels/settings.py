@@ -185,10 +185,14 @@ EMAIL_BACKEND = os.environ.get(
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+# Google shows app passwords in groups of four with spaces. Spaces are removed, so either form works.
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '').replace(' ', '')
 EMAIL_USE_TLS = env_bool('EMAIL_USE_TLS', True)
 EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '20'))  # seconds before a send is reported as failed
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Explore Rwanda <noreply@example.com>')
+# Gmail rewrites the sender unless it is the account that signs in, so the sender follows EMAIL_HOST_USER by default.
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') or (
+    f'Explore Rwanda <{EMAIL_HOST_USER}>' if EMAIL_HOST_USER else 'Explore Rwanda <noreply@example.com>'
+)
 SITE_NAME = 'Explore Rwanda with a Local Guide'
 SITE_URL = os.environ.get('SITE_URL') or os.environ.get('RENDER_EXTERNAL_URL') or 'http://127.0.0.1:8000'
 

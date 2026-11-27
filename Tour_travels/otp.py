@@ -138,14 +138,17 @@ _EMAIL_TEXT = {
 
 def _send_code_email(purpose, code, to_address):
     text = _EMAIL_TEXT[purpose]
-    body = render_to_string('accounts/otp_email.txt', {
+    context = {
         'intro': text['intro'],
         'label': text['label'],
         'closing': text['closing'],
         'code': code,
         'minutes': settings.OTP_LIFETIME_SECONDS // 60,
-    })
-    send_mail(text['subject'], body, settings.DEFAULT_FROM_EMAIL, [to_address], fail_silently=False)
+    }
+    body = render_to_string('accounts/otp_email.txt', context)
+    html = render_to_string('accounts/otp_email.html', context)
+    send_mail(text['subject'], body, settings.DEFAULT_FROM_EMAIL, [to_address], fail_silently=False,
+              html_message=html)
 
 
 def issue_code(user, purpose, to_email=''):

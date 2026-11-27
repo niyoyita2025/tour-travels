@@ -6,9 +6,10 @@ invalidation of older codes, delivery failures, duplicate emails, per-device lim
 flow, including the identical response for registered and unknown addresses.
 """
 
+import io
 import re
 from datetime import timedelta
-from smtplib import SMTPException
+from smtplib import SMTPAuthenticationError, SMTPException
 from unittest import mock
 
 from django.conf import settings
@@ -16,7 +17,9 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core import mail
 from django.core.cache import cache
-from django.test import TestCase
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -491,6 +494,47 @@ class PasswordStorageTests(AuthTestCase):
         self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
         user.refresh_from_db()
         self.assertTrue(user.password.startswith('argon2$'))
+
+
+class EmailDeliveryTests(AuthTestCase):
+    def test_code_email_has_a_plain_text_and_a_styled_html_version(self):
+        user = User.objects.create_user('htmlmail', 'htmlmail@example.com', PASSWORD)
+        with mock.patch('Tour_travels.otp.secrets.randbelow', return_value=246810):
+            otp.issue_code(user, otp.RESET)
+        message = mail.outbox[-1]
+        self.assertIn('246810', message.body)
+        html = [content for content, kind in message.alternatives if kind == 'text/html']
+        self.assertEqual(len(html), 1)
+        self.assertIn('246810', html[0])
+        self.assertIn('letter-spacing', html[0])  # the code is set in a styled box
+
+    def test_reset_link_email_states_the_real_expiry(self):
+        self.client.force_login(self.staff)
+        self.client.post(reverse('admin_customer_reset', args=[self.user.pk]))
+        body = mail.outbox[0].body
+        self.assertIn(f'expires after {settings.PASSWORD_RESET_TIMEOUT // 60} minutes', body)
+        self.assertNotIn('24 hours', body)
+
+
+class SendTestEmailCommandTests(AuthTestCase):
+    def test_sends_one_email_through_the_current_backend(self):
+        call_command('send_test_email', 'someone@example.com', stdout=io.StringIO())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['someone@example.com'])
+        self.assertEqual(mail.outbox[0].subject, 'Explore Rwanda: test email')
+
+    def test_refuses_to_run_with_gmail_credentials_missing(self):
+        with override_settings(EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend',
+                               EMAIL_HOST_USER='', EMAIL_HOST_PASSWORD=''):
+            with self.assertRaisesMessage(CommandError, 'EMAIL_HOST_PASSWORD'):
+                call_command('send_test_email', 'someone@example.com', stdout=io.StringIO())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_reports_a_gmail_refusal_as_a_plain_error(self):
+        refusal = SMTPAuthenticationError(535, b'5.7.8 Username and Password not accepted')
+        with mock.patch('Tour_travels.management.commands.send_test_email.send_mail', side_effect=refusal):
+            with self.assertRaisesMessage(CommandError, 'SMTPAuthenticationError'):
+                call_command('send_test_email', 'someone@example.com', stdout=io.StringIO())
 
 
 class AuthPagesTests(AuthTestCase):

@@ -183,6 +183,7 @@ def admin_customer_reset(request, pk):
             from_email=settings.DEFAULT_FROM_EMAIL,
             email_template_name='accounts/password_reset_email.txt',
             subject_template_name='accounts/password_reset_subject.txt',
+            extra_email_context={'expiry_minutes': settings.PASSWORD_RESET_TIMEOUT // 60},
         )
         notifications.log_activity(request.user, 'customer.password_reset', f'Reset link sent to {customer.username}')
         messages.success(request, f'A password reset link was emailed to {customer.email}.')
