@@ -2,6 +2,14 @@
 //
 // This script only updates what the page shows. The server re-checks every seat
 // when a booking is saved, so a stale calendar can never cause a double booking.
+// Choosing a group size reloads the day, so the times that fit that group are shown
+// and the earliest one is suggested. Without scripts the "Show times" button does the same.
+(function () {
+  document.querySelectorAll('select[data-auto-submit]').forEach(function (select) {
+    select.addEventListener('change', function () { select.form.submit(); });
+  });
+})();
+
 (function () {
   var root = document.getElementById('calendar');
   if (!root) return;

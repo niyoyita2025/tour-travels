@@ -56,6 +56,12 @@ a.cal-day:hover, a.cal-day:focus-visible { transform: translateY(-2px); box-shad
 .slot strong { color: var(--forest); font-size: 1.05rem; }
 .slot small { color: var(--muted); }
 .slot-note { font-size: .8rem; color: var(--muted); margin: 6px 0 0; }
+.slot.is-suggested { border-color: var(--gold); background: rgba(230, 184, 92, .14); }
+.suggest { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: rgba(230, 184, 92, .14); font-size: .92rem; }
+.guest-picker { display: grid; gap: 6px; margin: 0 0 12px; }
+.guest-picker label { font-size: .85rem; color: var(--muted); }
+.guest-picker-row { display: flex; align-items: center; gap: 8px; }
+.guest-picker select { max-width: 140px; }
 .cal-updated { font-size: .75rem; color: var(--muted); margin-top: 10px; }
 .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2fa35c; margin-right: 6px; animation: livepulse 2s infinite; }
 @keyframes livepulse { 0% { opacity: 1; } 50% { opacity: .3; } 100% { opacity: 1; } }

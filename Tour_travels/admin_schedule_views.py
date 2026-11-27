@@ -6,6 +6,7 @@ All views here are administrator-only.
 from datetime import timedelta
 
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.http import Http404
@@ -14,10 +15,10 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from . import notifications
+from . import notifications, scheduling
 from .calendar_service import build_month
-from .forms import TourScheduleBulkForm, TourScheduleForm
-from .models import Booking, TourPackage, TourSchedule
+from .forms import ScheduleRuleForm, TourScheduleBulkForm, TourScheduleForm
+from .models import Booking, ScheduleRule, TourPackage, TourSchedule
 from .views import staff_required
 
 
@@ -107,6 +108,58 @@ def admin_schedule_delete(request, pk):
         notifications.log_activity(request.user, 'schedule.deleted', f'Deleted tour date: {label}')
         messages.success(request, f'Deleted "{label}".')
     return redirect('admin_schedules')
+
+
+@staff_required
+def admin_scheduling(request):
+    """Every tour, with its automatic timetable where it has one."""
+    rules = {rule.package_id: rule for rule in ScheduleRule.objects.all()}
+    rows = [{'package': package, 'rule': rules.get(package.pk)}
+            for package in TourPackage.objects.order_by('title')]
+    return render(request, 'admin/scheduling.html', {'rows': rows})
+
+
+@staff_required
+def admin_scheduling_edit(request, package_id):
+    """Set a tour's timetable: start times, interval, tour length, operating days, capacity and group sizes."""
+    package = get_object_or_404(TourPackage, pk=package_id)
+    rule = ScheduleRule.objects.filter(package=package).first() or ScheduleRule(package=package)
+    if request.method == 'POST':
+        form = ScheduleRuleForm(request.POST, instance=rule, package=package)
+        if form.is_valid():
+            with transaction.atomic():
+                rule = form.save()
+                added, removed = scheduling.sync_rule(package)
+            notifications.log_activity(
+                request.user, 'schedule.rule',
+                f'Saved the timetable for {package.title}: {len(rule.start_times())} start times a day, '
+                f'{added} opened, {removed} removed')
+            messages.success(request, f'Timetable saved for "{package.title}". {added} new start time(s) opened'
+                                      f' and {removed} unbooked time(s) that no longer fit were removed.')
+            return redirect('admin_scheduling')
+        messages.error(request, 'Please fix the highlighted fields.')
+    else:
+        form = ScheduleRuleForm(instance=rule, package=package)
+    saved = rule.pk is not None
+    return render(request, 'admin/scheduling_form.html', {
+        'form': form,
+        'package': package,
+        'rule': rule if saved else None,
+        'times': rule.start_times() if saved else [],
+    })
+
+
+@staff_required
+@require_POST
+def admin_scheduling_off(request, package_id):
+    """Stop automatic dates for a tour. Booked times are kept; unbooked future times are removed."""
+    package = get_object_or_404(TourPackage, pk=package_id)
+    with transaction.atomic():
+        removed = scheduling.turn_off(package)
+    notifications.log_activity(request.user, 'schedule.rule_off', f'Stopped the automatic timetable for {package.title}')
+    messages.success(request, f'Automatic dates stopped for "{package.title}". {removed} unbooked time(s) removed; '
+                              'booked times were kept.')
+    return redirect('admin_scheduling')
 
 
 @staff_required

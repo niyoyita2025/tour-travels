@@ -1,13 +1,14 @@
 from django.contrib import admin, messages
 from django.db import transaction
 
+from . import scheduling
 from .destination_tours import auto_tours_blocking, ensure_destination_tour, remove_auto_tours
 from .forms import TourScheduleForm
 
 from .models import (
     FAQ, AboutSection, ActivityLog, BackgroundImage, Booking, Category, CoHost, ContactDetail, CultureItem,
     Destination, DetailBook, DetailLink, DetailPhoto, DetailSection, DetailsPage, Inquiry, Notification,
-    Payment, Review, SiteSettings, SocialLink, TourPackage, TourSchedule,
+    Payment, Review, ScheduleRule, SiteSettings, SocialLink, TourPackage, TourSchedule,
 )
 
 
@@ -219,6 +220,20 @@ class TourScheduleAdmin(admin.ModelAdmin):
     list_editable = ('is_open',)
     readonly_fields = ('seats_booked',)
     search_fields = ('package__title',)
+
+
+@admin.register(ScheduleRule)
+class ScheduleRuleAdmin(admin.ModelAdmin):
+    """Tour timetables. Saving here opens the start times at once, as the Automatic timetables page does."""
+    list_display = ('package', 'default_start', 'last_start', 'interval_hours', 'tour_hours', 'daily_capacity')
+    fields = ('package', 'default_start', 'last_start', 'interval_hours', 'tour_hours', 'operating_days',
+              'daily_capacity', 'days_ahead')
+    search_fields = ('package__title',)
+
+    def save_model(self, request, obj, form, change):
+        with transaction.atomic():
+            super().save_model(request, obj, form, change)
+            scheduling.sync_rule(obj.package)
 
 
 @admin.register(FAQ)

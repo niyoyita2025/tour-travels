@@ -24,7 +24,7 @@ from .bookings import BookingUnavailable, check_slot_open, create_booking, expir
 from .calendar_service import availability_payload, build_month
 from .destination_tours import top_up_dates
 from .forms import BookingForm
-from .models import Booking, TourPackage, TourSchedule, UserProfile
+from .models import Booking, ScheduleRule, TourPackage, TourSchedule, UserProfile
 
 SUMMARY_FIELDS = ['schedule', 'guests', 'duration_hours', 'destination', 'full_name', 'email', 'phone', 'country',
                   'special_requests']
@@ -76,6 +76,12 @@ def _parse_guests(value, default=1):
         return default
 
 
+def _group_size(request, package):
+    """How many guests the visitor is booking for, kept within the tour's smallest and largest group."""
+    guests = _parse_guests(request.GET.get('guests'), default=package.min_guests)
+    return min(max(guests, package.min_guests), package.max_guests)
+
+
 def _month_from_request(request):
     """Year and month to show: from ?date=, else ?month=, else this month. Never before this month."""
     today = timezone.localdate()
@@ -103,6 +109,7 @@ def tour_calendar(request, slug):
     year, month = _month_from_request(request)
     cal = build_month(year, month, package)
 
+    guests = _group_size(request, package)
     selected_day = None
     selected_iso = request.GET.get('date', '')
     today = timezone.localdate()
@@ -110,10 +117,25 @@ def tour_calendar(request, slug):
         for day in week:
             if day['iso'] == selected_iso and day['in_month'] and day['date'] >= today:
                 selected_day = day
+
+    suggested = None
+    if selected_day is not None:
+        # Mark the times that fit this group, and suggest the earliest of them.
+        for slot in selected_day['slots']:
+            slot['fits'] = slot['bookable'] and slot['remaining'] >= guests
+            if slot.get('book_url'):
+                slot['book_url'] += f'&guests={guests}'
+            if slot['fits'] and suggested is None:
+                suggested = slot
+
     return render(request, 'calendar.html', {
         'package': package,
         'cal': cal,
         'selected_day': selected_day,
+        'guests': guests,
+        'guest_options': range(package.min_guests, package.max_guests + 1),
+        'suggested': suggested,
+        'rule': ScheduleRule.objects.filter(package=package).first(),
         'availability_url': reverse('tour_availability', args=[package.slug]),
         'weekday_names': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
         'hold_hours': settings.BOOKING_HOLD_HOURS,
@@ -152,14 +174,14 @@ def book_package(request, slug):
         messages.error(request, str(exc))
         return redirect(f"{reverse('tour_calendar', args=[package.slug])}?date={schedule.date.isoformat()}")
 
-    guests = _parse_guests(request.GET.get('guests'))
+    guests = _group_size(request, package)
     if not request.user.is_authenticated:
         save_intent(request, schedule, guests)
         return redirect('booking_start')
 
     intent = read_intent(request)
     if intent and intent.get('schedule') == schedule.pk and 'guests' not in request.GET:
-        guests = _parse_guests(intent.get('guests'))
+        guests = min(max(_parse_guests(intent.get('guests')), package.min_guests), package.max_guests)
     guests = min(guests, max(schedule.seats_remaining, 1))
 
     profile, _ = UserProfile.objects.get_or_create(user=request.user)

@@ -1,0 +1,41 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Timetable · {{ package.title }}{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'admin_scheduling' %}">← Automatic timetables</a></span>
+    <h1>Timetable for {{ package.title }}</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Set the start times, the length of a tour, the operating days and the daily guest limit. Start times are opened automatically for the days ahead you choose.</p>
+  </div>
+</div>
+
+<div class="layout-2">
+  <div class="form-card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="form-grid">{% include '_form_fields.html' %}</div>
+      <div class="form-foot">
+        <button class="btn btn-dark" type="submit">Save timetable</button>
+        <small>Saving opens the start times now. Times that already have a booking are never changed.</small>
+      </div>
+    </form>
+  </div>
+  <aside class="panel">
+    <h2>How it works</h2>
+    <ul class="highlight-list">
+      <li>Start times run from the <strong>first start time</strong> to the <strong>last start time</strong>, one every interval.</li>
+      <li>Each start time takes <strong>one group</strong>. Once a group books it, that time is closed to other clients.</li>
+      <li>A group is on tour for the <strong>tour length</strong>, so a start that would overlap it is not offered.</li>
+      <li>The <strong>daily capacity</strong> limits the guests on one date, across all of its start times.</li>
+      <li>Every booking is checked again on the server when it is saved, so two clients cannot take the same time.</li>
+    </ul>
+    {% if times %}
+      <h3>Start times each day</h3>
+      <p>{% for t in times %}<span class="status confirmed">{{ t|time:"H:i" }}</span> {% endfor %}</p>
+    {% endif %}
+    <h3>Group sizes</h3>
+    <p>The smallest and largest group are set on this page and apply to every booking for this tour.</p>
+  </aside>
+</div>
+{% endblock %}

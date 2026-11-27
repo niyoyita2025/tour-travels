@@ -18,6 +18,7 @@
   <a href="{% url 'admin_bookings' %}" class="{% if request.resolver_match.url_name == 'admin_bookings' or request.resolver_match.url_name == 'admin_booking_edit' %}active{% endif %}">Reservations</a>
   <a href="{% url 'admin_calendar' %}" class="{% if request.resolver_match.url_name == 'admin_calendar' %}active{% endif %}">Booking calendar</a>
   <a href="{% url 'admin_schedules' %}" class="{% if request.resolver_match.url_name == 'admin_schedules' or request.resolver_match.url_name == 'admin_schedule_edit' or request.resolver_match.url_name == 'admin_schedule_bulk' or request.resolver_match.url_name == 'admin_schedule_new' %}active{% endif %}">Tour dates &amp; capacity</a>
+  <a href="{% url 'admin_scheduling' %}" class="{% if request.resolver_match.url_name == 'admin_scheduling' or request.resolver_match.url_name == 'admin_scheduling_edit' %}active{% endif %}">Automatic timetables</a>
   <a href="{% url 'admin_payments' %}" class="{% if request.resolver_match.url_name == 'admin_payments' %}active{% endif %}">Payments</a>
 
   <p class="dash-group">Website pages</p>

@@ -21,7 +21,8 @@ from django.core.files.base import ContentFile
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import Category, TourPackage, TourSchedule
+from . import scheduling
+from .models import Category, ScheduleRule, TourPackage, TourSchedule
 
 AUTO_CATEGORY = 'Destination visits'
 
@@ -92,7 +93,11 @@ def top_up_dates(tour):
     """
     Keep an automatic tour bookable. When less than half of the open-dates window is left ahead,
     a fresh window is opened. Dates the administrator has closed stay closed.
+    A tour with its own timetable (ScheduleRule) is topped up by the timetable instead.
     """
+    if ScheduleRule.objects.filter(package=tour).exists():
+        scheduling.top_up(tour)
+        return
     if not tour.auto_for_id:
         return
     horizon = timezone.localdate() + timedelta(days=settings.AUTO_TOUR_DAYS_AHEAD // 2)

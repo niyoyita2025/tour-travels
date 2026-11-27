@@ -10,9 +10,10 @@ from django.core.validators import RegexValidator
 from django.utils import timezone
 from PIL import Image
 
+from .calendar_service import effective_remaining, schedules_in_range
 from .models import (
     FAQ, Booking, Category, CultureItem, Destination, Inquiry, Payment, Review, SiteSettings,
-    TourPackage, TourSchedule, UserProfile, CoHost,
+    ScheduleRule, TourPackage, TourSchedule, UserProfile, CoHost,
     AboutSection, BackgroundImage, ContactDetail, DetailBook, DetailLink, DetailPhoto, DetailSection,
     DetailsPage, SocialLink,
 )
@@ -244,18 +245,41 @@ class BookingForm(StyledFormMixin, forms.ModelForm):
         else:
             self.fields['destination'].queryset = Destination.objects.filter(is_active=True).order_by('name')
             self.fields['destination'].empty_label = 'Not sure yet'
-        self.fields['guests'].widget.attrs['min'] = 1
+        self.package = package
+        self.rule = ScheduleRule.objects.filter(package=package).first() if package else None
+        self.fields['guests'].widget.attrs['min'] = package.min_guests if package else 1
+        if self.rule is not None:
+            # A tour with a timetable runs for its set length, so the client does not choose it.
+            self.initial['duration_hours'] = self.rule.tour_hours
+            self.fields['duration_hours'].disabled = True
+            self.fields['duration_hours'].label = 'Tour length'
+            self.fields['duration_hours'].help_text = 'Every group is on tour for this many hours.'
         if schedule is not None:
             self.fields['guests'].widget.attrs['max'] = max(min(schedule.seats_remaining,
                                                                  schedule.package.max_guests), 1)
 
+    def _seats_now(self):
+        """Guests this start time can still take, including what its date has left under the daily capacity."""
+        schedule = self.schedule
+        for slot in schedules_in_range(schedule.date, schedule.date, schedule.package):
+            if slot.pk == schedule.pk:
+                return effective_remaining(slot)
+        return schedule.seats_remaining
+
     def clean_guests(self):
         guests = self.cleaned_data['guests']
-        if self.schedule is not None and guests > self.schedule.seats_remaining:
-            if self.schedule.seats_remaining == 0:
+        if self.schedule is None:
+            return guests
+        if guests < self.schedule.package.min_guests:
+            raise forms.ValidationError(f'This tour needs at least {self.schedule.package.min_guests} guests.')
+        seats = self._seats_now()
+        if guests > seats:
+            if seats == 0 and self.schedule.group_only:
+                raise forms.ValidationError(
+                    'This start time has already been booked by another group. Please choose another time.')
+            if seats == 0:
                 raise forms.ValidationError('This date is now fully booked. Please choose another date or time.')
-            raise forms.ValidationError(
-                f'Only {self.schedule.seats_remaining} seat(s) are left on this date and time.')
+            raise forms.ValidationError(f'Only {seats} seat(s) are left on this date and time.')
         return guests
 
 
@@ -343,11 +367,26 @@ class DestinationForm(StyledFormMixin, forms.ModelForm):
 
 
 class TourPackageForm(StyledFormMixin, forms.ModelForm):
+    # Optional on the form: a blank value keeps the default of one guest, so existing tours are unaffected.
+    min_guests = forms.IntegerField(min_value=1, required=False, initial=1, label='Smallest group (guests)',
+                                    help_text='Clients must book at least this many guests.')
+
     class Meta:
         model = TourPackage
         fields = ['title', 'slug', 'category', 'destinations', 'summary', 'description', 'highlights',
-                  'price', 'duration_days', 'max_guests', 'image', 'image_url', 'is_featured', 'is_active']
+                  'price', 'duration_days', 'min_guests', 'max_guests', 'image', 'image_url', 'is_featured',
+                  'is_active']
         widgets = {'highlights': forms.Textarea(attrs={'rows': 5})}
+
+    def clean_min_guests(self):
+        return self.cleaned_data.get('min_guests') or 1
+
+    def clean(self):
+        cleaned = super().clean()
+        low, high = cleaned.get('min_guests'), cleaned.get('max_guests')
+        if low and high and low > high:
+            self.add_error('min_guests', 'The smallest group cannot be larger than the largest group.')
+        return cleaned
 
 
 class CategoryForm(StyledFormMixin, forms.ModelForm):
@@ -479,6 +518,68 @@ class TourScheduleBulkForm(StyledFormMixin, forms.Form):
             if start < timezone.localdate():
                 raise forms.ValidationError('Start date must be today or later.')
         return cleaned
+
+
+class ScheduleRuleForm(StyledFormMixin, forms.ModelForm):
+    """
+    The automatic timetable for one tour: start times, how long each group is on tour, the operating
+    days, the daily capacity and the group sizes. Group sizes are saved on the tour itself.
+    """
+
+    min_guests = forms.IntegerField(min_value=1, max_value=50, label='Smallest group (guests)')
+    max_guests = forms.IntegerField(min_value=1, max_value=50, label='Largest group (guests)')
+    weekdays = forms.MultipleChoiceField(choices=WEEKDAY_CHOICES, widget=forms.CheckboxSelectMultiple,
+                                         label='Operating days')
+
+    class Meta:
+        model = ScheduleRule
+        fields = ['default_start', 'last_start', 'interval_hours', 'tour_hours', 'daily_capacity', 'days_ahead']
+        widgets = {
+            'default_start': forms.TimeInput(attrs={'type': 'time'}),
+            'last_start': forms.TimeInput(attrs={'type': 'time'}),
+        }
+        labels = {
+            'default_start': 'First start time',
+            'last_start': 'Last start time',
+            'interval_hours': 'Hours between start times',
+            'tour_hours': 'Tour length (hours)',
+            'daily_capacity': 'Daily capacity (guests per date)',
+            'days_ahead': 'Open dates this many days ahead',
+        }
+        help_texts = {
+            'interval_hours': 'For example 3 gives 08:00, 11:00, 14:00 and 17:00.',
+            'tour_hours': 'A group occupies the tour for this long. Starts that would overlap it are not offered.',
+            'daily_capacity': 'The most guests the tour takes on one date, across all of its start times.',
+        }
+
+    def __init__(self, *args, package, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.package = package
+        self.fields['min_guests'].initial = package.min_guests
+        self.fields['max_guests'].initial = package.max_guests
+        self.fields['weekdays'].initial = sorted(self.instance.operating_days.split(','))
+
+    def clean(self):
+        cleaned = super().clean()  # the model checks that the last start time is not before the first
+        low, high = cleaned.get('min_guests'), cleaned.get('max_guests')
+        if low and high and low > high:
+            self.add_error('min_guests', 'The smallest group cannot be larger than the largest group.')
+        daily = cleaned.get('daily_capacity')
+        if high and daily and daily < high:
+            self.add_error('daily_capacity',
+                           f'The daily capacity must hold at least one largest group ({high} guests).')
+        return cleaned
+
+    def save(self, commit=True):
+        rule = super().save(commit=False)
+        rule.package = self.package
+        rule.operating_days = ','.join(sorted(self.cleaned_data['weekdays']))
+        if commit:
+            rule.save()
+            self.package.min_guests = self.cleaned_data['min_guests']
+            self.package.max_guests = self.cleaned_data['max_guests']
+            self.package.save(update_fields=['min_guests', 'max_guests'])
+        return rule
 
 
 class BroadcastForm(StyledFormMixin, forms.Form):

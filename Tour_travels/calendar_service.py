@@ -17,7 +17,7 @@ from django.db.models import F, Q, Sum
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import HOLDING_STATUSES, Booking, TourSchedule
+from .models import HOLDING_STATUSES, Booking, ScheduleRule, TourSchedule
 
 AVAILABLE = 'available'
 LIMITED = 'limited'
@@ -45,7 +45,13 @@ def _minutes(clock):
 
 
 def schedules_in_range(start, end, package=None):
-    """Slots in the date range, each marked if another reservation's time covers its start."""
+    """
+    Slots in the date range, each with:
+      reserved_by_time – another booking's time runs into this start time, or this tour's full
+                         length (from its timetable) would run into it;
+      day_left         – guests still allowed on this date under the tour's daily capacity
+                         (None when the tour has no timetable).
+    """
     qs = TourSchedule.objects.filter(date__range=(start, end)).select_related('package')
     if package is not None:
         qs = qs.filter(package=package)
@@ -58,20 +64,41 @@ def schedules_in_range(start, end, package=None):
     if package is not None:
         reservations = reservations.filter(package=package)
     by_date = {}
+    guests_by_day = {}
     for booking in reservations:
         by_date.setdefault(booking.travel_date, []).append(booking)
+        key = (booking.package_id, booking.travel_date)
+        guests_by_day[key] = guests_by_day.get(key, 0) + booking.guests
+
+    rules = {rule.package_id: rule for rule in ScheduleRule.objects.filter(
+        package_id__in={slot.package_id for slot in slots})}
 
     for slot in slots:
+        rule = rules.get(slot.package_id)
+        slot.day_left = None
+        if rule is not None:
+            used = guests_by_day.get((slot.package_id, slot.date), 0)
+            slot.day_left = max(rule.daily_capacity - used, 0)
         slot.reserved_by_time = False
-        start_minute = _minutes(slot.start_time)
+        slot_start = _minutes(slot.start_time)
+        slot_end = slot_start + (rule.tour_hours * 60 if rule is not None else 1)
         for booking in by_date.get(slot.date, []):
             if booking.schedule_id == slot.pk or booking.package_id != slot.package_id:
                 continue
             window_start, window_end = booking.window_minutes
-            if window_start <= start_minute < window_end:
+            if window_start < slot_end and slot_start < window_end:
                 slot.reserved_by_time = True
                 break
     return slots
+
+
+def effective_remaining(slot):
+    """Guests a client can still take on this slot: its own seats, capped by what the date has left."""
+    remaining = slot.seats_remaining
+    day_left = getattr(slot, 'day_left', None)
+    if day_left is not None:
+        remaining = min(remaining, day_left)
+    return remaining
 
 
 def _day_status(day, slots, today):
@@ -80,7 +107,7 @@ def _day_status(day, slots, today):
     live = [s for s in slots if s.is_open and not s.has_started and not s.reserved_by_time]
     if not live:
         return NONE
-    remaining = sum(s.seats_remaining for s in live)
+    remaining = sum(effective_remaining(s) for s in live)
     pending = sum((s.pending_seats or 0) for s in live)
     if remaining == 0:
         return FULL
@@ -90,19 +117,22 @@ def _day_status(day, slots, today):
 
 
 def _slot_payload(slot, package_slug=None):
-    bookable = slot.is_bookable and not slot.reserved_by_time
+    remaining = effective_remaining(slot)
+    bookable = slot.is_bookable and not slot.reserved_by_time and remaining > 0
     payload = {
         'id': slot.pk,
         'date': slot.date.isoformat(),
         'time': slot.start_time.strftime('%H:%M'),
         'capacity': slot.capacity,
         'booked': slot.seats_booked,
-        'remaining': slot.seats_remaining,
+        'remaining': remaining,
         'pending': slot.pending_seats or 0,
         'bookable': bookable,
         'closed': not slot.is_open,
         'started': slot.has_started,
         'reserved': slot.reserved_by_time,
+        'group': slot.group_only,
+        'taken': slot.group_only and slot.seats_booked > 0,
     }
     if package_slug and bookable:
         payload['book_url'] = f"{reverse('book_package', args=[package_slug])}?schedule={slot.pk}"
@@ -166,7 +196,7 @@ def build_month(year, month, package=None, today=None, with_bookings=False):
                 'is_today': day == today,
                 'status': status,
                 'label': STATUS_LABELS[status],
-                'remaining': sum(s.seats_remaining for s in live),
+                'remaining': sum(effective_remaining(s) for s in live),
                 'capacity': sum(s.capacity for s in live),
                 'booked': sum(s.seats_booked for s in day_slots),
                 'all_capacity': sum(s.capacity for s in day_slots),
@@ -219,7 +249,7 @@ def next_bookable_slots(package_ids, days=180, today=None):
     for slot in sorted(slots, key=lambda s: (s.date, s.start_time)):
         if slot.package_id not in package_ids or slot.package_id in best:
             continue
-        if slot.is_open and not slot.has_started and not slot.reserved_by_time and slot.seats_remaining > 0:
+        if slot.is_open and not slot.has_started and not slot.reserved_by_time and effective_remaining(slot) > 0:
             best[slot.package_id] = slot
     return best
 
@@ -230,7 +260,7 @@ def upcoming_bookable_slots(package, limit=10, days=120, today=None):
     slots = schedules_in_range(today, today + timedelta(days=days), package)
     open_slots = [
         slot for slot in sorted(slots, key=lambda s: (s.date, s.start_time))
-        if slot.is_open and not slot.has_started and not slot.reserved_by_time and slot.seats_remaining > 0
+        if slot.is_open and not slot.has_started and not slot.reserved_by_time and effective_remaining(slot) > 0
     ]
     return open_slots[:limit]
 

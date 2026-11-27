@@ -1,0 +1,45 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Automatic timetables{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Bookings &amp; calendar</span>
+    <h1>Automatic timetables</h1>
+    <p style="color:var(--muted);margin:6px 0 0">A tour with a timetable gets its start times made automatically: one every few hours, one group per start time, and a daily guest limit. Tours without one keep the dates you add by hand.</p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a class="btn btn-light" href="{% url 'admin_schedules' %}">Tour dates &amp; capacity</a>
+  </div>
+</div>
+
+{% if rows %}
+  <div class="panel table-wrap">
+    <table>
+      <thead><tr><th>Tour</th><th>Group size</th><th>Start times</th><th>Tour length</th><th>Daily capacity</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td><strong>{{ row.package.title }}</strong></td>
+            <td>{{ row.package.min_guests }} to {{ row.package.max_guests }} guests</td>
+            {% if row.rule %}
+              <td>{{ row.rule.default_start|time:"H:i" }} to {{ row.rule.last_start|time:"H:i" }}, every {{ row.rule.interval_hours }} h</td>
+              <td>{{ row.rule.tour_hours }} hour{{ row.rule.tour_hours|pluralize }}</td>
+              <td>{{ row.rule.daily_capacity }} guests a day</td>
+              <td style="white-space:nowrap">
+                <a class="btn btn-light btn-sm" href="{% url 'admin_scheduling_edit' row.package.pk %}">Edit timetable</a>
+                <form class="inline-form" method="post" action="{% url 'admin_scheduling_off' row.package.pk %}" onsubmit="return confirm('Stop automatic dates for this tour? Unbooked future times will be removed. Booked times are kept.');">{% csrf_token %}<button class="btn btn-danger btn-sm" type="submit">Stop</button></form>
+              </td>
+            {% else %}
+              <td colspan="3"><span style="color:var(--muted)">No timetable. Dates are added by hand.</span></td>
+              <td><a class="btn btn-dark btn-sm" href="{% url 'admin_scheduling_edit' row.package.pk %}">Set up timetable</a></td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="empty">There are no tours yet. Add a tour first, then give it a timetable here.</div>
+{% endif %}
+{% endblock %}

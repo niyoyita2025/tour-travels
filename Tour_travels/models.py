@@ -121,6 +121,9 @@ class TourPackage(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0'))],
                                 help_text='Price per guest, in USD.')
     duration_days = models.PositiveSmallIntegerField(default=1, validators=[MinValueValidator(1)])
+    min_guests = models.PositiveSmallIntegerField(
+        default=1, validators=[MinValueValidator(1)],
+        help_text='Smallest group a client can book (for example 2 or 3). Bookings below this are refused.')
     max_guests = models.PositiveSmallIntegerField(default=10, validators=[MinValueValidator(1)])
     image = models.ImageField(upload_to='packages/', blank=True, validators=IMAGE_VALIDATORS)
     image_url = models.URLField(blank=True, help_text='Optional web address of a photo, used when no image is uploaded.')
@@ -187,6 +190,9 @@ class TourSchedule(models.Model):
         default=0, editable=False,
         help_text='Seats held by pending and confirmed bookings. Maintained automatically.')
     is_open = models.BooleanField(default=True, help_text='Untick to close this slot to new bookings.')
+    group_only = models.BooleanField(
+        default=False, editable=False,
+        help_text='Set for start times made by a tour timetable: one group per start time.')
     notes = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -202,6 +208,8 @@ class TourSchedule(models.Model):
 
     @property
     def seats_remaining(self):
+        if self.group_only and self.seats_booked:
+            return 0  # one group per start time: the time is taken once a group has booked it
         return max(self.capacity - self.seats_booked, 0)
 
     @property
@@ -215,6 +223,56 @@ class TourSchedule(models.Model):
     @property
     def is_bookable(self):
         return self.is_open and not self.has_started and self.seats_remaining > 0
+
+
+class ScheduleRule(models.Model):
+    """
+    An automatic timetable for one tour. Start times run from default_start every interval_hours
+    up to last_start, on the operating days. Each start time takes one group, a group is on tour for
+    tour_hours (later starts that would overlap it are not offered), and one date holds at most
+    daily_capacity guests. The group sizes are set on the tour itself (TourPackage).
+    Tours without a rule keep their hand-made dates.
+    """
+
+    package = models.OneToOneField(TourPackage, on_delete=models.CASCADE, related_name='schedule_rule')
+    default_start = models.TimeField(default=time(8, 0), help_text='The first start time of the day.')
+    last_start = models.TimeField(default=time(17, 0), help_text='The latest start time of the day.')
+    interval_hours = models.PositiveSmallIntegerField(
+        default=3, validators=[MinValueValidator(1), MaxValueValidator(MAX_BOOKING_HOURS)],
+        help_text='Hours from one start time to the next.')
+    tour_hours = models.PositiveSmallIntegerField(
+        default=3, validators=[MinValueValidator(1), MaxValueValidator(MAX_BOOKING_HOURS)],
+        help_text='How long one group is on tour. Every booking uses this length.')
+    operating_days = models.CharField(
+        max_length=20, default='0,1,2,3,4,5,6', help_text='Days the tour runs. Monday is 0, Sunday is 6.')
+    daily_capacity = models.PositiveSmallIntegerField(
+        default=24, validators=[MinValueValidator(1)],
+        help_text='Most guests on one date, across all of its start times.')
+    days_ahead = models.PositiveSmallIntegerField(
+        default=60, validators=[MinValueValidator(7), MaxValueValidator(365)],
+        help_text='How many days ahead dates are opened.')
+
+    def __str__(self):
+        return f'Timetable for {self.package.title}' if self.package_id else 'Tour timetable'
+
+    def clean(self):
+        super().clean()
+        if self.default_start and self.last_start and self.last_start < self.default_start:
+            raise ValidationError({'last_start': 'The last start time cannot be earlier than the first start time.'})
+
+    @property
+    def weekdays(self):
+        return {int(day) for day in self.operating_days.split(',') if day.strip().isdigit()}
+
+    def start_times(self):
+        """Every start time of the day, in order."""
+        minute = self.default_start.hour * 60 + self.default_start.minute
+        last = self.last_start.hour * 60 + self.last_start.minute
+        times = []
+        while minute <= last:
+            times.append(time(minute // 60, minute % 60))
+            minute += self.interval_hours * 60
+        return times
 
 
 class Booking(models.Model):
@@ -275,6 +333,8 @@ class Booking(models.Model):
 
     def clean(self):
         super().clean()
+        if self.package_id and self.guests and self.guests < self.package.min_guests:
+            raise ValidationError(f'This tour needs at least {self.package.min_guests} guests.')
         if self.package_id and self.guests and self.guests > self.package.max_guests:
             raise ValidationError(f'This tour allows at most {self.package.max_guests} guests.')
         if self._state.adding and self.travel_date and self.travel_date < timezone.localdate():

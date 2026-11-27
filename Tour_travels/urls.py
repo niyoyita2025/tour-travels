@@ -89,6 +89,11 @@ urlpatterns = [
     path('manage/schedules/<int:pk>/edit/', admin_schedule_views.admin_schedule_form, name='admin_schedule_edit'),
     path('manage/schedules/<int:pk>/delete/', admin_schedule_views.admin_schedule_delete,
          name='admin_schedule_delete'),
+    path('manage/scheduling/', admin_schedule_views.admin_scheduling, name='admin_scheduling'),
+    path('manage/scheduling/<int:package_id>/', admin_schedule_views.admin_scheduling_edit,
+         name='admin_scheduling_edit'),
+    path('manage/scheduling/<int:package_id>/off/', admin_schedule_views.admin_scheduling_off,
+         name='admin_scheduling_off'),
 
     # Control Panel: each management area has its own page and form
     path('manage/backgrounds/', manage_views.background_manage, name='background_manage'),

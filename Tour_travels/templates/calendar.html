@@ -9,7 +9,7 @@
 <section class="page-hero"><div class="container">
   <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / <a href="{% url 'packages' %}">Tours</a> / <a href="{{ package.get_absolute_url }}">{{ package.title }}</a> / Booking calendar</div>
   <h1>Choose your date</h1>
-  <p>{{ package.title }} · USD {{ package.price }} per guest · up to {{ package.max_guests }} guests</p>
+  <p>{{ package.title }} · USD {{ package.price }} per guest · {% if package.min_guests > 1 %}groups of {{ package.min_guests }} to {{ package.max_guests }} guests{% else %}up to {{ package.max_guests }} guests{% endif %}</p>
 </div></section>
 
 <section class="page-section"><div class="container cal-layout">
@@ -74,15 +74,42 @@
       <div class="cal-card">
         <h3>{{ selected_day.date|date:"l j F Y" }}</h3>
         <p>{{ selected_day.label }} · {{ selected_day.remaining }} of {{ selected_day.capacity }} seats left</p>
+
+        <form method="get" class="guest-picker" data-guest-form>
+          <input type="hidden" name="month" value="{{ cal.month_key }}">
+          <input type="hidden" name="date" value="{{ selected_day.iso }}">
+          <label for="guests-select">How many guests?</label>
+          <div class="guest-picker-row">
+            <select id="guests-select" name="guests" class="input" data-auto-submit>
+              {% for n in guest_options %}<option value="{{ n }}"{% if n == guests %} selected{% endif %}>{{ n }}</option>{% endfor %}
+            </select>
+            <noscript><button class="btn btn-light btn-sm" type="submit">Show times</button></noscript>
+          </div>
+        </form>
+
+        {% if rule %}
+          <p class="slot-note">Tours start every {{ rule.interval_hours }} hour{{ rule.interval_hours|pluralize }}, from {{ rule.default_start|time:"H:i" }} to {{ rule.last_start|time:"H:i" }}, and last {{ rule.tour_hours }} hour{{ rule.tour_hours|pluralize }}.</p>
+        {% endif %}
+
+        {% if suggested %}
+          <p class="suggest" data-suggest>Suggested for {{ guests }} guest{{ guests|pluralize }}: <strong>{{ suggested.time }}</strong></p>
+        {% elif selected_day.slots %}
+          <p class="slot-note">No time on this date has room for {{ guests }} guest{{ guests|pluralize }}. Try fewer guests or another date.</p>
+        {% endif %}
+
         <ul class="slot-list">
           {% for slot in selected_day.slots %}
-            <li class="slot{% if not slot.bookable %} is-disabled{% endif %}" data-slot-id="{{ slot.id }}">
+            <li class="slot{% if not slot.bookable %} is-disabled{% endif %}{% if suggested and suggested.id == slot.id %} is-suggested{% endif %}" data-slot-id="{{ slot.id }}">
               <div>
                 <strong>{{ slot.time }}</strong>
-                <small> · <span data-slot-remaining>{{ slot.remaining }}</span> of {{ slot.capacity }} seats left</small>
-                <div class="slot-note" data-slot-note>{% if slot.bookable %}{% elif slot.started %}Already started{% elif slot.closed %}Closed for booking{% else %}Fully booked{% endif %}</div>
+                {% if slot.group %}
+                  {% if slot.bookable %}<small> · open for a group of up to {{ slot.capacity }}</small>{% endif %}
+                {% else %}
+                  <small> · <span data-slot-remaining>{{ slot.remaining }}</span> of {{ slot.capacity }} seats left</small>
+                {% endif %}
+                <div class="slot-note" data-slot-note>{% if suggested and suggested.id == slot.id %}Suggested time{% elif slot.bookable and not slot.fits %}Not enough room for {{ guests }} guest{{ guests|pluralize }}{% elif slot.bookable %}Available{% elif slot.taken %}Booked by another group{% elif slot.reserved %}Overlaps another tour{% elif slot.started %}Already started{% elif slot.closed %}Closed for booking{% else %}Fully booked{% endif %}</div>
               </div>
-              {% if slot.bookable %}
+              {% if slot.bookable and slot.fits %}
                 <a class="btn btn-dark btn-sm" data-slot-book href="{{ slot.book_url }}">Book this time</a>
               {% endif %}
             </li>
@@ -90,7 +117,7 @@
             <li class="slot-note">No times are offered on this date.</li>
           {% endfor %}
         </ul>
-        <p class="slot-note">On the next step you choose how many guests to book, up to the seats left.</p>
+        <p class="slot-note">Next, you confirm the number of guests and your details. Times that do not fit your group are shown but cannot be booked.</p>
       </div>
     {% else %}
       <div class="cal-card">

@@ -30,11 +30,11 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
-from django.db.models import F
+from django.db.models import F, Q, Sum
 from django.utils import timezone
 
 from . import notifications
-from .models import HOLDING_STATUSES, Booking, TourSchedule
+from .models import HOLDING_STATUSES, Booking, ScheduleRule, TourPackage, TourSchedule
 
 
 class BookingUnavailable(Exception):
@@ -44,6 +44,8 @@ class BookingUnavailable(Exception):
 FULL_MESSAGE = 'Sorry, this date is now fully booked. Please choose another date or time.'
 DUPLICATE_MESSAGE = 'You already have an active booking for this date and time.'
 CLOSED_MESSAGE = 'This date is no longer open for booking.'
+GROUP_TAKEN_MESSAGE = 'This start time has already been booked by another group. Please choose another time.'
+DAILY_MESSAGE = 'Sorry, this date has no room left for that many guests. Please choose another date.'
 
 
 def hold_deadline():
@@ -55,13 +57,39 @@ def _clock(minutes):
 
 
 def _reserve(schedule_id, seats):
-    """Take `seats` on a slot. Returns True only if the slot had room at this exact moment."""
+    """
+    Take `seats` on a slot. Returns True only if the slot had room at this exact moment.
+    A timetable start time (group_only) is taken by its first group alone.
+    """
     updated = TourSchedule.objects.filter(
+        Q(group_only=False) | Q(seats_booked=0),
         pk=schedule_id,
         is_open=True,
         seats_booked__lte=F('capacity') - seats,
     ).update(seats_booked=F('seats_booked') + seats)
     return updated == 1
+
+
+def _taken_message(schedule):
+    return GROUP_TAKEN_MESSAGE if schedule.group_only else FULL_MESSAGE
+
+
+def _lock_tour(package_id):
+    """Serialise bookings for one tour, so the daily guest total is checked against every saved booking."""
+    TourPackage.objects.select_for_update().only('pk').get(pk=package_id)
+
+
+def _check_daily_capacity(package, travel_date, guests, exclude_booking_id=None):
+    """A date holds at most the timetable's daily capacity of guests. Call while the tour row is locked."""
+    rule = ScheduleRule.objects.filter(package=package).first()
+    if rule is None:
+        return
+    holding = Booking.objects.filter(package=package, travel_date=travel_date, status__in=HOLDING_STATUSES)
+    if exclude_booking_id is not None:
+        holding = holding.exclude(pk=exclude_booking_id)
+    already = holding.aggregate(total=Sum('guests'))['total'] or 0
+    if already + guests > rule.daily_capacity:
+        raise BookingUnavailable(DAILY_MESSAGE)
 
 
 def _release(schedule_id, seats):
@@ -73,7 +101,7 @@ def check_slot_open(schedule):
     if not schedule.is_open or schedule.has_started:
         raise BookingUnavailable(CLOSED_MESSAGE)
     if schedule.seats_remaining <= 0:
-        raise BookingUnavailable(FULL_MESSAGE)
+        raise BookingUnavailable(_taken_message(schedule))
 
 
 def find_conflict(package, travel_date, start_minutes, duration_hours,
@@ -118,12 +146,14 @@ def create_booking(*, user, schedule, guests, duration_hours=2, status=Booking.S
     holds = status in HOLDING_STATUSES
     with transaction.atomic():
         if holds:
+            _lock_tour(schedule.package_id)
+            _check_daily_capacity(schedule.package, schedule.date, guests)
             other = find_conflict(schedule.package, schedule.date, _slot_start_minutes(schedule),
                                   duration_hours, exclude_schedule_id=schedule.pk)
             if other is not None:
                 raise BookingUnavailable(_conflict_message(other))
             if not _reserve(schedule.pk, guests):
-                raise BookingUnavailable(FULL_MESSAGE)
+                raise BookingUnavailable(_taken_message(schedule))
         booking = Booking(
             user=user, package=schedule.package, schedule=schedule, travel_date=schedule.date,
             guests=guests, duration_hours=duration_hours, status=status, **fields,
@@ -150,13 +180,15 @@ def update_booking(booking, *, schedule, guests, duration_hours, **fields):
         if schedule.pk != booking.schedule_id:
             check_slot_open(schedule)
         if holding:
+            _lock_tour(schedule.package_id)
+            _check_daily_capacity(schedule.package, schedule.date, guests, exclude_booking_id=booking.pk)
             other = find_conflict(schedule.package, schedule.date, _slot_start_minutes(schedule),
                                   duration_hours, exclude_schedule_id=schedule.pk,
                                   exclude_booking_id=booking.pk)
             if other is not None:
                 raise BookingUnavailable(_conflict_message(other))
             if not _reserve(schedule.pk, guests):
-                raise BookingUnavailable(FULL_MESSAGE)
+                raise BookingUnavailable(_taken_message(schedule))
         values = {
             'schedule': schedule, 'travel_date': schedule.date, 'guests': guests,
             'duration_hours': duration_hours, 'total_price': booking.package.price * guests,
@@ -184,6 +216,9 @@ def set_booking_status(booking, new_status):
             was_holding = old_status in HOLDING_STATUSES
             will_hold = new_status in HOLDING_STATUSES
             if will_hold and not was_holding:
+                _lock_tour(booking.package_id)
+                _check_daily_capacity(booking.package, booking.travel_date, booking.guests,
+                                      exclude_booking_id=booking.pk)
                 if not _reserve(booking.schedule_id, booking.guests):
                     raise BookingUnavailable('There are no seats left on this date to reopen this booking.')
             elif was_holding and not will_hold:
