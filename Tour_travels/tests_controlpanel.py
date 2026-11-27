@@ -474,11 +474,12 @@ class PasswordRecoveryTests(ControlPanelTestCase):
         again = self.client.get(reverse('password_reset_confirm', args=[uid, token]), follow=True)
         self.assertFalse(again.context['validlink'])
 
-    def test_administrator_reset_email_contains_a_link_and_never_the_password(self):
+    def test_administrator_reset_email_contains_a_code_and_link_and_never_the_password(self):
         self.client.force_login(self.staff)
         self.client.post(reverse('admin_customer_reset', args=[self.user.pk]))
         body = mail.outbox[0].body
-        self.assertIn('/password-reset/', body)
+        self.assertRegex(body, r'\n\d{6}\n')
+        self.assertIn('/password-reset/have-code/', body)
         self.assertNotIn(PASSWORD, body)
 
 

@@ -62,7 +62,8 @@ RESET_EMAIL = 'reset_email'
 RESET_REQUESTED_AT = 'reset_requested_at'
 RESET_USER = 'reset_user_id'
 RESET_VERIFIED_AT = 'reset_verified_at'
-RESET_KEYS = (RESET_EMAIL, RESET_REQUESTED_AT, RESET_USER, RESET_VERIFIED_AT)
+RESET_CODE_FROM_EMAIL = 'reset_code_from_email'  # the code came by email without being requested here
+RESET_KEYS = (RESET_EMAIL, RESET_REQUESTED_AT, RESET_USER, RESET_VERIFIED_AT, RESET_CODE_FROM_EMAIL)
 
 
 # ---------- helpers ----------
@@ -402,6 +403,24 @@ def forgot_password(request):
     return render(request, 'accounts/password_reset_form.html', {'form': form})
 
 
+def reset_have_code(request):
+    """For a code that arrived without being requested here (for example one an administrator sent).
+
+    Only the email address is collected. No code is sent, so the reply is the same for every address.
+    """
+    if request.method == 'POST':
+        form = ForgotPasswordForm(request.POST)
+        if form.is_valid():
+            for key in RESET_KEYS:
+                request.session.pop(key, None)
+            request.session[RESET_EMAIL] = form.cleaned_data['email']
+            request.session[RESET_CODE_FROM_EMAIL] = True
+            return redirect('password_reset_verify')
+    else:
+        form = ForgotPasswordForm()
+    return render(request, 'accounts/password_reset_have_code.html', {'form': form})
+
+
 def reset_verify(request):
     email = request.session.get(RESET_EMAIL)
     if not email:
@@ -426,6 +445,7 @@ def reset_verify(request):
 
     expires_in, resend_in = _session_timers(request)
     return render(request, 'accounts/password_reset_verify.html', _code_page_context(
+        code_from_email=bool(request.session.get(RESET_CODE_FROM_EMAIL)),
         masked_email=otp.mask_email(email),
         expires_in=expires_in,
         resend_in=resend_in,
@@ -447,6 +467,7 @@ def reset_resend(request):
     elif resend_in:
         messages.info(request, f'Please wait {resend_in} seconds before requesting another code.')
     else:
+        request.session.pop(RESET_CODE_FROM_EMAIL, None)  # a fresh self-service code has its own timer
         _send_reset_code(request, email)
     return redirect('password_reset_verify')
 

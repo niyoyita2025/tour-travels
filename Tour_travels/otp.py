@@ -136,14 +136,24 @@ _EMAIL_TEXT = {
 }
 
 
-def _send_code_email(purpose, code, to_address):
-    text = _EMAIL_TEXT[purpose]
+# A reset an administrator starts for a customer from the staff dashboard.
+_STAFF_RESET_TEXT = {
+    'subject': 'Your Password Reset Code',
+    'intro': 'An Explore Rwanda administrator started a password reset for your account.',
+    'label': 'Your six-digit password reset code is:',
+    'closing': 'If you did not expect this, you can ignore this email and your password will stay the same.',
+}
+
+
+def _send_code_email(purpose, code, to_address, lifetime_seconds, link_url='', staff_reset=False):
+    text = _STAFF_RESET_TEXT if staff_reset else _EMAIL_TEXT[purpose]
     context = {
         'intro': text['intro'],
         'label': text['label'],
         'closing': text['closing'],
         'code': code,
-        'minutes': settings.OTP_LIFETIME_SECONDS // 60,
+        'minutes': lifetime_seconds // 60,
+        'link_url': link_url,
     }
     body = render_to_string('accounts/otp_email.txt', context)
     html = render_to_string('accounts/otp_email.html', context)
@@ -175,10 +185,13 @@ def describe_email_error(error):
     return f'{type(error).__name__}: {error}'
 
 
-def issue_code(user, purpose, to_email=''):
+def issue_code(user, purpose, to_email='', lifetime_seconds=None, link_url='', staff_reset=False):
     """Create a new code, email it, and only then cancel the older codes.
 
     An email change sends the code to `to_email`, the new address, and records that address on the code.
+    `lifetime_seconds` overrides OTP_LIFETIME_SECONDS (a reset sent by an administrator lasts longer, since
+    the customer did not ask for it and may open the email later). `link_url` adds a link to the page where
+    the code is entered.
     Raises ResendTooSoon if a code was requested recently, TooManyCodes if the account has used its
     allowance for the window, or DeliveryFailed if the email was not accepted. In each case the previous
     code, if any, keeps working.
@@ -190,6 +203,7 @@ def issue_code(user, purpose, to_email=''):
         raise TooManyCodes
 
     now = timezone.now()
+    lifetime = lifetime_seconds or settings.OTP_LIFETIME_SECONDS
     EmailOTP.objects.filter(created_at__lt=now - timedelta(days=1)).delete()  # tidy up old rows
     code = generate_code()
     otp = EmailOTP.objects.create(
@@ -198,10 +212,11 @@ def issue_code(user, purpose, to_email=''):
         code_hash=_keyed_hash(user.pk, purpose, code),
         target_email=to_email,
         created_at=now,
-        expires_at=now + timedelta(seconds=settings.OTP_LIFETIME_SECONDS),
+        expires_at=now + timedelta(seconds=lifetime),
     )
     try:
-        _send_code_email(purpose, code, to_email or user.email)
+        _send_code_email(purpose, code, to_email or user.email, lifetime, link_url=link_url,
+                         staff_reset=staff_reset)
     except Exception as error:  # noqa: BLE001 - any SMTP, network or configuration error is a delivery failure
         otp.delete()
         # The reason names the setting to fix. It never includes the code, the message body or the password.

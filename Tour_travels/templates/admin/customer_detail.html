@@ -57,7 +57,7 @@
 
       <form method="post" action="{% url 'admin_customer_reset' customer.pk %}" style="margin:0">
         {% csrf_token %}
-        <button class="btn btn-light btn-block" type="submit" style="justify-content:space-between;width:100%">Email a password reset link <span>→</span></button>
+        <button class="btn btn-light btn-block" type="submit" style="justify-content:space-between;width:100%">Email a password reset code <span>→</span></button>
       </form>
 
       {% if customer.pk != request.user.pk %}

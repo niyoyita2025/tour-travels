@@ -16,7 +16,7 @@
     </div>
   </fieldset>
   <p class="otp-meta" aria-live="polite">
-    {% if expires_in %}Code expires in <strong data-countdown-expiry data-seconds="{{ expires_in }}">{{ expires_in }} seconds</strong>.{% else %}There is no live code. Request a new one below.{% endif %}
+    {% if code_from_email %}Enter the code from your email. It works until the time stated in the email.{% elif expires_in %}Code expires in <strong data-countdown-expiry data-seconds="{{ expires_in }}">{{ expires_in }} seconds</strong>.{% else %}There is no live code. Request a new one below.{% endif %}
   </p>
   <div class="form-foot">
     <button class="btn btn-dark btn-block" type="submit">Verify code</button>

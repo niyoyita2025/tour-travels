@@ -42,6 +42,7 @@ urlpatterns = [
 
     # Forgot password: a six-digit code is emailed, then a new password is chosen.
     path('password-reset/', accounts_views.forgot_password, name='password_reset'),
+    path('password-reset/have-code/', accounts_views.reset_have_code, name='password_reset_have_code'),
     path('password-reset/verify/', accounts_views.reset_verify, name='password_reset_verify'),
     path('password-reset/resend/', accounts_views.reset_resend, name='password_reset_resend'),
     path('password-reset/new/', accounts_views.reset_new_password, name='password_reset_new'),

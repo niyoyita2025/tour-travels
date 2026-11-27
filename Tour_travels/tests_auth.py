@@ -25,7 +25,7 @@ from django.utils import timezone
 
 from . import otp
 from .accounts_views import (
-    PASSWORD_CHANGED_MESSAGE, RESET_REQUESTED_AT, RESET_VERIFIED_AT, RESET_SENT_MESSAGE, SEND_LIMIT,
+    PASSWORD_CHANGED_MESSAGE, RESET_CODE_ERROR, RESET_REQUESTED_AT, RESET_VERIFIED_AT, RESET_SENT_MESSAGE, SEND_LIMIT,
     SEND_LIMIT_MESSAGE, TOO_MANY_CODES_MESSAGE,
 )
 from .models import EmailOTP, UserProfile
@@ -508,12 +508,80 @@ class EmailDeliveryTests(AuthTestCase):
         self.assertIn('246810', html[0])
         self.assertIn('letter-spacing', html[0])  # the code is set in a styled box
 
-    def test_reset_link_email_states_the_real_expiry(self):
+
+class AdminResetCodeTests(AuthTestCase):
+    NEW = 'Brand-New-Pass-2026'
+
+    def send_from_dashboard(self):
         self.client.force_login(self.staff)
-        self.client.post(reverse('admin_customer_reset', args=[self.user.pk]))
-        body = mail.outbox[0].body
-        self.assertIn(f'expires after {settings.PASSWORD_RESET_TIMEOUT // 60} minutes', body)
-        self.assertNotIn('24 hours', body)
+        response = self.client.post(reverse('admin_customer_reset', args=[self.user.pk]), follow=True)
+        self.client.logout()
+        return response
+
+    def test_admin_sends_a_six_digit_code_with_a_working_link(self):
+        response = self.send_from_dashboard()
+        self.assertContains(response, 'six-digit reset code was emailed')
+        message = mail.outbox[-1]
+        self.assertEqual(message.to, [self.user.email])
+        code = emailed_code(message)
+        self.assertRegex(code, r'^\d{6}$')
+        link = 'http://testserver' + reverse('password_reset_have_code')
+        self.assertIn(link, message.body)
+        html = [content for content, kind in message.alternatives if kind == 'text/html'][0]
+        self.assertIn(f'href="{link}"', html)
+        self.assertIn(f'expires after {settings.PASSWORD_RESET_TIMEOUT // 60} minutes', message.body)
+        self.assertIn('administrator started a password reset', message.body)
+        self.assertNotIn('password-reset/MQ', message.body)  # no old uid/token link
+
+    def test_customer_uses_the_code_on_another_device_and_signs_in(self):
+        self.send_from_dashboard()
+        code = emailed_code(mail.outbox[-1])
+        customer = self.client_class()  # a fresh browser with no session from the request
+        self.assertEqual(customer.get(reverse('password_reset_have_code')).status_code, 200)
+        response = customer.post(reverse('password_reset_have_code'), {'email': self.user.email.upper()},
+                                 follow=True)
+        self.assertRedirects(response, reverse('password_reset_verify'))
+        self.assertContains(response, 'Enter the six-digit code that was emailed')
+        self.assertEqual(len(mail.outbox), 1)  # entering the email sends nothing new
+        response = customer.post(reverse('password_reset_verify'), code_post(code))
+        self.assertRedirects(response, reverse('password_reset_new'))
+        response = customer.post(reverse('password_reset_new'),
+                                 {'new_password1': self.NEW, 'new_password2': self.NEW}, follow=True)
+        self.assertRedirects(response, reverse('login'))
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.NEW))
+        self.assertTrue(customer.login(username=self.user.email, password=self.NEW))
+
+    def test_the_admin_code_outlives_the_normal_five_minutes(self):
+        self.send_from_dashboard()
+        code = emailed_code(mail.outbox[-1])
+        later = timezone.now() + timedelta(seconds=settings.OTP_LIFETIME_SECONDS + 60)
+        with mock.patch('django.utils.timezone.now', return_value=later):
+            self.client.post(reverse('password_reset_have_code'), {'email': self.user.email})
+            response = self.client.post(reverse('password_reset_verify'), code_post(code))
+        self.assertRedirects(response, reverse('password_reset_new'), fetch_redirect_response=False)
+
+    def test_a_wrong_code_or_unknown_email_is_refused(self):
+        self.send_from_dashboard()
+        response = self.client.post(reverse('password_reset_have_code'), {'email': 'nobody@example.com'},
+                                    follow=True)
+        self.assertContains(response, 'Enter the six-digit code')  # same page for unknown addresses
+        response = self.client.post(reverse('password_reset_verify'), code_post(emailed_code(mail.outbox[-1])),
+                                    follow=True)
+        self.assertContains(response, RESET_CODE_ERROR)
+
+    def test_a_failed_send_is_reported_to_the_admin(self):
+        with mock.patch('Tour_travels.otp.send_mail', side_effect=SMTPException('down')):
+            response = self.send_from_dashboard()
+        self.assertContains(response, 'no code is on its way')
+        self.assertFalse(EmailOTP.objects.filter(user=self.user).exists())
+
+    def test_deactivated_accounts_get_no_code(self):
+        self.user.is_active = False
+        self.user.save(update_fields=['is_active'])
+        response = self.send_from_dashboard()
+        self.assertContains(response, 'This account is deactivated')
+        self.assertEqual(len(mail.outbox), 0)
 
 
 class SendTestEmailCommandTests(AuthTestCase):

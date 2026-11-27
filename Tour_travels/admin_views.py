@@ -8,7 +8,6 @@ Every view here is protected by @staff_required (administrators only).
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import PasswordResetForm
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,7 +15,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from . import notifications
+from . import notifications, otp
 from .bookings import BookingUnavailable, update_booking
 from .forms import (
     AdminAccountForm, AdminBookingForm, AdminCustomerForm, BroadcastForm, BookingStatusForm, PaymentForm,
@@ -171,24 +170,33 @@ def admin_customer_role(request, pk):
 @staff_required
 @require_POST
 def admin_customer_reset(request, pk):
-    """Email the customer a password reset link on the administrator's behalf."""
+    """Email the customer a six-digit password reset code on the administrator's behalf.
+
+    The email links to the "I have a code" page, where the customer enters their email, then the code,
+    then a new password. The code lasts PASSWORD_RESET_TIMEOUT, since the customer did not ask for it.
+    """
     customer = get_object_or_404(User, pk=pk)
-    form = PasswordResetForm({'email': customer.email})
+    lifetime = settings.PASSWORD_RESET_TIMEOUT
     if not customer.email:
         messages.error(request, 'This account has no email address.')
-    elif form.is_valid():
-        form.save(
-            request=request,
-            use_https=request.is_secure(),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            email_template_name='accounts/password_reset_email.txt',
-            subject_template_name='accounts/password_reset_subject.txt',
-            extra_email_context={'expiry_minutes': settings.PASSWORD_RESET_TIMEOUT // 60},
-        )
-        notifications.log_activity(request.user, 'customer.password_reset', f'Reset link sent to {customer.username}')
-        messages.success(request, f'A password reset link was emailed to {customer.email}.')
+    elif not customer.is_active:
+        messages.error(request, 'This account is deactivated. Activate it before sending a reset code.')
     else:
-        messages.error(request, 'The reset link could not be sent. Check the account email address.')
+        try:
+            otp.issue_code(customer, otp.RESET, lifetime_seconds=lifetime, staff_reset=True,
+                           link_url=request.build_absolute_uri(reverse('password_reset_have_code')))
+        except otp.ResendTooSoon as wait:
+            messages.info(request, f'A code was sent a moment ago. You can send another in {wait.seconds} seconds.')
+        except otp.TooManyCodes:
+            messages.error(request, 'Too many codes were sent to this account in the last hour. Try again later.')
+        except otp.DeliveryFailed:
+            messages.error(request, 'The email could not be sent, so no code is on its way. '
+                                    'The server log names the reason (usually the Gmail app password).')
+        else:
+            notifications.log_activity(request.user, 'customer.password_reset',
+                                       f'Reset code emailed to {customer.username}')
+            messages.success(request, f'A six-digit reset code was emailed to {customer.email}. '
+                                      f'It works for {lifetime // 60} minutes.')
     return redirect('admin_customer_detail', pk=customer.pk)
 
 
