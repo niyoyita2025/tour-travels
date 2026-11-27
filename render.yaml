@@ -1,0 +1,43 @@
+# Render Blueprint: one Django web service + one free PostgreSQL database.
+databases:
+  - name: tour-travels-db
+    plan: free
+    databaseName: tour_travels
+    user: tour_travels
+
+services:
+  - type: web
+    name: tour-travels
+    runtime: python
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: gunicorn Travels.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.7
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tour-travels-db
+          property: connectionString
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_SECURE_SSL_REDIRECT
+        value: "1"
+      # Admin account created on first deploy. Render asks you for these values.
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+      # Gmail sending for sign-up and password codes. Render asks for the 16-character app password.
+      - key: DJANGO_EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false

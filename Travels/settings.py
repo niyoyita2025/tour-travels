@@ -53,6 +53,12 @@ if not SECRET_KEY:
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,[::1]')
 CSRF_TRUSTED_ORIGINS = env_list('DJANGO_CSRF_TRUSTED_ORIGINS')
 
+# Render sets these automatically, so the site works on its .onrender.com address without extra config.
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '').strip()
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -170,7 +176,7 @@ EMAIL_USE_TLS = env_bool('EMAIL_USE_TLS', True)
 EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '20'))  # seconds before a send is reported as failed
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Explore Rwanda <noreply@example.com>')
 SITE_NAME = 'Explore Rwanda with a Local Guide'
-SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
+SITE_URL = os.environ.get('SITE_URL') or os.environ.get('RENDER_EXTERNAL_URL') or 'http://127.0.0.1:8000'
 
 # Booking calendar policy
 BOOKING_HOLD_HOURS = int(os.environ.get('BOOKING_HOLD_HOURS', '48'))  # pending requests keep seats this long
