@@ -13,7 +13,9 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from . import notifications, otp
-from .accounts_views import SEND_LIMIT_MESSAGE, _code_page_context, _entered_code, _send_allowed
+from .accounts_views import (
+    SEND_LIMIT_MESSAGE, TOO_MANY_CODES_MESSAGE, _code_page_context, _entered_code, _send_allowed,
+)
 from .forms import EmailChangeForm, ProfileDetailsForm
 from .models import UserProfile
 from .otp import mask_email
@@ -69,6 +71,9 @@ def request_email_change(request):
         # while the first code is out.
         messages.info(request, f'A confirmation code was just sent. You can request another in {wait.seconds} seconds.')
         return redirect('profile_email_verify')
+    except otp.TooManyCodes:
+        messages.error(request, TOO_MANY_CODES_MESSAGE)
+        return redirect('profile')
     except otp.DeliveryFailed:
         messages.error(request, 'We could not send the confirmation email right now. Please try again in a moment.')
         return redirect('profile')
@@ -138,6 +143,8 @@ def resend_email_change(request):
             otp.issue_code(request.user, otp.EMAIL_CHANGE, to_email=target)
         except otp.ResendTooSoon as wait:
             messages.info(request, f'Please wait {wait.seconds} seconds before requesting another code.')
+        except otp.TooManyCodes:
+            messages.error(request, TOO_MANY_CODES_MESSAGE)
         except otp.DeliveryFailed:
             messages.error(request, 'We could not send the confirmation email right now. Please try again in a moment.')
         else:

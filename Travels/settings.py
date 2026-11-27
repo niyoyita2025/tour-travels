@@ -121,6 +121,14 @@ else:
     }
 
 
+# Argon2 is preferred. Passwords stored with the older PBKDF2 hasher still sign in, and Django moves them
+# to Argon2 the next time their owner signs in.
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+]
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
@@ -142,6 +150,10 @@ OTP_LIFETIME_SECONDS = 5 * 60            # a code expires after 5 minutes
 OTP_RESEND_SECONDS = 60                  # wait this long before a new code can be requested
 OTP_MAX_ATTEMPTS = 5                     # wrong entries before a code is locked
 PASSWORD_RESET_CHOOSE_SECONDS = 10 * 60  # time to choose a new password once the code is accepted
+# Codes emailed to one account for one purpose, across all devices. With OTP_MAX_ATTEMPTS (5 per code),
+# this caps guesses at 25 per account per hour, however many devices or addresses are used.
+OTP_ACCOUNT_MAX_SENDS = 5
+OTP_ACCOUNT_SEND_WINDOW_SECONDS = 60 * 60
 
 
 LANGUAGE_CODE = 'en-us'
@@ -165,7 +177,9 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 EMAIL_BACKEND = os.environ.get(
     'DJANGO_EMAIL_BACKEND',
-    'django.core.mail.backends.console.EmailBackend',
+    # Local development prints emails to the terminal. Anywhere else, codes must not reach the logs.
+    'django.core.mail.backends.console.EmailBackend' if DEBUG
+    else 'django.core.mail.backends.smtp.EmailBackend',
 )
 # Gmail SMTP. EMAIL_HOST_PASSWORD must be a Google "app password", never the normal Gmail password.
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')

@@ -50,6 +50,9 @@ RESET_SENT_MESSAGE = ('If an account is registered with that email address, a si
                       'Check your inbox and spam folder.')
 RESET_CODE_ERROR = ('That code is not valid. It may be wrong, expired or already used. '
                     'Enter the newest code, or request a new one.')
+TOO_MANY_CODES_MESSAGE = ('Too many codes have been sent to this account recently. '
+                          'Please wait a while, then try again.')
+PASSWORD_CHANGED_MESSAGE = 'Your password has been changed. Log in with your new password.'
 
 # Session keys for the two multi-step flows.
 SIGNUP_USER = 'signup_user_id'
@@ -143,6 +146,8 @@ def _deliver_signup_code(request, user):
         otp.issue_code(user, otp.SIGNUP)
     except otp.ResendTooSoon as wait:
         messages.info(request, f'A code was sent a moment ago. You can request another in {wait.seconds} seconds.')
+    except otp.TooManyCodes:
+        messages.error(request, TOO_MANY_CODES_MESSAGE)
     except otp.DeliveryFailed:
         messages.error(request, DELIVERY_FAILED_MESSAGE)
     else:
@@ -205,7 +210,8 @@ def _send_reset_code(request, email):
         return
     try:
         otp.issue_code(user, otp.RESET)
-    except otp.ResendTooSoon:
+    except (otp.ResendTooSoon, otp.TooManyCodes):
+        # The same reply as a sent code. Reporting the limit would reveal that this address has an account.
         messages.success(request, RESET_SENT_MESSAGE)
     except otp.DeliveryFailed:
         messages.error(request, DELIVERY_FAILED_MESSAGE)
@@ -454,7 +460,8 @@ def reset_new_password(request):
                 request.session.pop(key, None)
             notifications.log_activity(user, 'account.password_reset',
                                        f'Password reset with an emailed code: {user.username}')
-            return redirect('password_reset_complete')
+            messages.success(request, PASSWORD_CHANGED_MESSAGE)
+            return redirect('login')
     else:
         form = NewPasswordForm(user)
     return render(request, 'accounts/password_reset_new.html', {'form': form})

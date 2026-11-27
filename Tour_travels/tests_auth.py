@@ -13,6 +13,7 @@ from unittest import mock
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
 from django.core import mail
 from django.core.cache import cache
 from django.test import TestCase
@@ -21,7 +22,8 @@ from django.utils import timezone
 
 from . import otp
 from .accounts_views import (
-    RESET_REQUESTED_AT, RESET_VERIFIED_AT, RESET_SENT_MESSAGE, SEND_LIMIT, SEND_LIMIT_MESSAGE,
+    PASSWORD_CHANGED_MESSAGE, RESET_REQUESTED_AT, RESET_VERIFIED_AT, RESET_SENT_MESSAGE, SEND_LIMIT,
+    SEND_LIMIT_MESSAGE, TOO_MANY_CODES_MESSAGE,
 )
 from .models import EmailOTP, UserProfile
 from .otp_testing import code_post, emailed_code
@@ -130,6 +132,17 @@ class OneTimeCodeTests(AuthTestCase):
         self.assertEqual(otp.mask_email('niyoyita@gmail.com'), 'n***@gmail.com')
         self.assertEqual(otp.mask_email('not-an-address'), '')
 
+    def test_codes_for_one_account_are_capped_per_window_and_purpose(self):
+        user = User.objects.create_user('capped', 'capped@example.com', PASSWORD)
+        for _ in range(settings.OTP_ACCOUNT_MAX_SENDS):
+            otp.issue_code(user, otp.RESET)
+            self.let_resend_interval_pass(user)
+        with self.assertRaises(otp.TooManyCodes):
+            otp.issue_code(user, otp.RESET)
+        self.assertEqual(len(mail.outbox), settings.OTP_ACCOUNT_MAX_SENDS)
+        otp.issue_code(user, otp.SIGNUP)  # another purpose has its own allowance
+        self.assertEqual(len(mail.outbox), settings.OTP_ACCOUNT_MAX_SENDS + 1)
+
 
 class SignUpTests(AuthTestCase):
     def test_registration_emails_a_code_with_the_agreed_wording(self):
@@ -209,6 +222,16 @@ class SignUpTests(AuthTestCase):
         response = self.client.post(reverse('verify_email_resend'), follow=True)
         self.assertContains(response, 'You can request another in')
         self.assertEqual(len(mail.outbox), 1)
+
+    def test_sign_up_resends_stop_at_the_account_cap(self):
+        self.register()
+        for _ in range(settings.OTP_ACCOUNT_MAX_SENDS - 1):
+            self.let_resend_interval_pass()
+            self.client.post(reverse('verify_email_resend'))
+        self.let_resend_interval_pass()
+        response = self.client.post(reverse('verify_email_resend'), follow=True)
+        self.assertContains(response, TOO_MANY_CODES_MESSAGE)
+        self.assertEqual(len(mail.outbox), settings.OTP_ACCOUNT_MAX_SENDS)
 
     def test_a_failed_email_is_reported_and_can_be_retried(self):
         with mock.patch('Tour_travels.otp.send_mail', side_effect=SMTPException('Gmail is unavailable')):
@@ -342,8 +365,9 @@ class ForgotPasswordTests(AuthTestCase):
         response = self.client.post(reverse('password_reset_verify'), code_post(code))
         self.assertRedirects(response, reverse('password_reset_new'))
         response = self.client.post(reverse('password_reset_new'), {
-            'new_password1': RESET_PASSWORD, 'new_password2': RESET_PASSWORD})
-        self.assertRedirects(response, reverse('password_reset_complete'))
+            'new_password1': RESET_PASSWORD, 'new_password2': RESET_PASSWORD}, follow=True)
+        self.assertRedirects(response, reverse('login'))
+        self.assertContains(response, PASSWORD_CHANGED_MESSAGE)
 
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password(RESET_PASSWORD))
@@ -424,12 +448,49 @@ class ForgotPasswordTests(AuthTestCase):
         self.assertContains(response, SEND_LIMIT_MESSAGE)
         self.assertEqual(len(mail.outbox), 0)  # unknown addresses get no email, and the limit held
 
+    def test_reset_requests_past_the_account_cap_send_nothing_and_look_the_same(self):
+        for _ in range(settings.OTP_ACCOUNT_MAX_SENDS):
+            self.request_reset('amina@example.com')
+            self.let_resend_interval_pass(self.user)
+        response = self.request_reset('amina@example.com')
+        self.assertContains(response, RESET_SENT_MESSAGE)
+        self.assertNotContains(response, TOO_MANY_CODES_MESSAGE)  # the limit must not reveal the account
+        self.assertEqual(len(mail.outbox), settings.OTP_ACCOUNT_MAX_SENDS)
+
     def test_a_reset_code_for_one_account_cannot_reset_another(self):
         self.client.post(reverse('password_reset'), {'email': 'amina@example.com'})
         code = emailed_code(mail.outbox[-1])
         self.set_session(**{'reset_email': 'ben@example.com'})
         response = self.client.post(reverse('password_reset_verify'), code_post(code), follow=True)
         self.assertContains(response, WRONG_CODE_MARKER)
+
+
+class EmailChangeCapTests(AuthTestCase):
+    def test_email_change_codes_stop_at_the_account_cap(self):
+        self.client.force_login(self.user)
+        new_email = 'amina-new@example.com'
+        for _ in range(settings.OTP_ACCOUNT_MAX_SENDS):
+            self.client.post(reverse('profile_email'), {'new_email': new_email})
+            self.let_resend_interval_pass(self.user)
+        response = self.client.post(reverse('profile_email'), {'new_email': new_email}, follow=True)
+        self.assertContains(response, TOO_MANY_CODES_MESSAGE)
+        response = self.client.post(reverse('profile_email_resend'), follow=True)
+        self.assertContains(response, TOO_MANY_CODES_MESSAGE)
+        self.assertEqual(len(mail.outbox), settings.OTP_ACCOUNT_MAX_SENDS)
+
+
+class PasswordStorageTests(AuthTestCase):
+    def test_new_passwords_are_stored_with_argon2(self):
+        user = User.objects.create_user('argon', 'argon@example.com', PASSWORD)
+        self.assertTrue(user.password.startswith('argon2$'))
+
+    def test_a_pbkdf2_password_still_signs_in_and_is_upgraded_to_argon2(self):
+        user = User.objects.create(username='legacy', email='legacy@example.com', is_active=True,
+                                   password=make_password(PASSWORD, hasher='pbkdf2_sha256'))
+        response = self.client.post(reverse('login'), {'username': 'legacy@example.com', 'password': PASSWORD})
+        self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
+        user.refresh_from_db()
+        self.assertTrue(user.password.startswith('argon2$'))
 
 
 class AuthPagesTests(AuthTestCase):

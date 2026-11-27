@@ -9,6 +9,8 @@ Six-digit email codes for sign-up verification and forgot-password.
 * Requesting a new code cancels every older code for the same purpose. If the new code cannot be
   emailed, the older code stays valid.
 * A new code can be requested only after settings.OTP_RESEND_SECONDS.
+* No more than settings.OTP_ACCOUNT_MAX_SENDS codes are emailed to one account for one purpose in
+  settings.OTP_ACCOUNT_SEND_WINDOW_SECONDS. This applies across devices, unlike the per-device limit.
 """
 
 import logging
@@ -18,6 +20,7 @@ from math import ceil
 from typing import NamedTuple
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import F
@@ -60,6 +63,10 @@ class DeliveryFailed(Exception):
     """The email service did not accept the message. No code was issued."""
 
 
+class TooManyCodes(Exception):
+    """This account has used up its codes for the time window. No code was issued."""
+
+
 def generate_code():
     """A cryptographically secure six-digit code, zero-padded from 000000 to 999999."""
     return f'{secrets.randbelow(10 ** CODE_DIGITS):0{CODE_DIGITS}d}'
@@ -76,6 +83,21 @@ def mask_email(address):
 def _keyed_hash(user_id, purpose, code):
     # HMAC keyed with SECRET_KEY: a copy of the database alone is not enough to test guesses offline.
     return salted_hmac(_KEY_SALT, f'{user_id}:{purpose}:{code}', algorithm='sha256').hexdigest()
+
+
+def _send_count_key(user, purpose):
+    return f'otp-account-sends:{user.pk}:{purpose}'
+
+
+def _count_send(user, purpose):
+    """Add one to the account's send count. The window starts with the first code in it."""
+    key = _send_count_key(user, purpose)
+    window = settings.OTP_ACCOUNT_SEND_WINDOW_SECONDS
+    cache.add(key, 0, window)
+    try:
+        cache.incr(key)
+    except ValueError:  # the window ended between the two calls above
+        cache.set(key, 1, window)
 
 
 def timers(user, purpose):
@@ -130,12 +152,15 @@ def issue_code(user, purpose, to_email=''):
     """Create a new code, email it, and only then cancel the older codes.
 
     An email change sends the code to `to_email`, the new address, and records that address on the code.
-    Raises ResendTooSoon if a code was requested recently, or DeliveryFailed if the email was not
-    accepted. In both cases the previous code, if any, keeps working.
+    Raises ResendTooSoon if a code was requested recently, TooManyCodes if the account has used its
+    allowance for the window, or DeliveryFailed if the email was not accepted. In each case the previous
+    code, if any, keeps working.
     """
     wait = timers(user, purpose)[1]
     if wait:
         raise ResendTooSoon(wait)
+    if cache.get(_send_count_key(user, purpose), 0) >= settings.OTP_ACCOUNT_MAX_SENDS:
+        raise TooManyCodes
 
     now = timezone.now()
     EmailOTP.objects.filter(created_at__lt=now - timedelta(days=1)).delete()  # tidy up old rows
@@ -155,6 +180,7 @@ def issue_code(user, purpose, to_email=''):
         logger.exception('Could not send a %s code to user %s', purpose, user.pk)
         raise DeliveryFailed from None
 
+    _count_send(user, purpose)
     EmailOTP.objects.filter(user=user, purpose=purpose, used_at__isnull=True).exclude(pk=otp.pk).update(used_at=now)
     return otp
 
