@@ -276,6 +276,12 @@ class RoleLoginView(ThrottledLoginMixin, LoginView):
     template_name = 'accounts/login.html'
     authentication_form = LoginForm
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Django's LoginView adds site_name = the domain, which would hide the site name set in the dashboard.
+        context.pop('site_name', None)
+        return context
+
     def form_invalid(self, form):
         unverified = _unverified_sign_in(self.request.POST.get('username'), self.request.POST.get('password'))
         if unverified is not None:

@@ -546,6 +546,10 @@ class AuthPagesTests(AuthTestCase):
         self.assertContains(self.client.get(reverse('login')), 'name="username"')
         self.assertContains(self.client.get(reverse('register')), 'js/otp.js')
 
+    def test_login_page_shows_the_site_name_not_the_domain(self):
+        page = self.client.get(reverse('login'))
+        self.assertContains(page, '<title>Log in | Explore Rwanda with a Local Guide</title>')
+
     def test_code_page_has_six_boxes_and_a_resend_control(self):
         self.register()
         page = self.client.get(reverse('verify_email'))

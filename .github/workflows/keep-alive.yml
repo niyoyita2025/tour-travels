@@ -20,4 +20,4 @@ jobs:
           curl --silent --show-error --output /dev/null \
             --write-out "HTTP %{http_code} in %{time_total}s\n" \
             --max-time 180 \
-            https://tour-travels-2.onrender.com/tours/
+            https://tour-travels-otuu.onrender.com/tours/
