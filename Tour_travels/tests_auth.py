@@ -240,7 +240,7 @@ class SignUpTests(AuthTestCase):
         with mock.patch('Tour_travels.otp.send_mail', side_effect=SMTPException('Gmail is unavailable')):
             self.register()
         response = self.client.get(reverse('verify_email'))
-        self.assertContains(response, 'could not send the email')
+        self.assertContains(response, 'email could not be sent')
         self.assertEqual(EmailOTP.objects.count(), 0)  # nothing was issued, so nothing can be entered
         self.assertEqual(len(mail.outbox), 0)
 
@@ -442,7 +442,7 @@ class ForgotPasswordTests(AuthTestCase):
     def test_a_failed_reset_email_is_reported(self):
         with mock.patch('Tour_travels.otp.send_mail', side_effect=SMTPException('Gmail is unavailable')):
             response = self.request_reset('amina@example.com')
-        self.assertContains(response, 'could not send the email')
+        self.assertContains(response, 'email could not be sent')
 
     def test_reset_requests_are_limited_per_device(self):
         for index in range(SEND_LIMIT):
@@ -533,8 +533,98 @@ class SendTestEmailCommandTests(AuthTestCase):
     def test_reports_a_gmail_refusal_as_a_plain_error(self):
         refusal = SMTPAuthenticationError(535, b'5.7.8 Username and Password not accepted')
         with mock.patch('Tour_travels.management.commands.send_test_email.send_mail', side_effect=refusal):
-            with self.assertRaisesMessage(CommandError, 'SMTPAuthenticationError'):
+            with self.assertRaisesMessage(CommandError, 'Gmail rejected the sign-in'):
                 call_command('send_test_email', 'someone@example.com', stdout=io.StringIO())
+
+
+class DeliveryFailureTests(AuthTestCase):
+    def test_a_refused_gmail_sign_in_shows_no_success_and_logs_the_reason_without_the_code(self):
+        refusal = SMTPAuthenticationError(535, b'5.7.8 Username and Password not accepted')
+        with mock.patch('Tour_travels.otp.send_mail', side_effect=refusal), \
+                mock.patch('Tour_travels.otp.secrets.randbelow', return_value=135791), \
+                self.assertLogs('Tour_travels.otp', level='ERROR') as logs:
+            response = self.client.post(reverse('password_reset'), {'email': 'amina@example.com'}, follow=True)
+        self.assertContains(response, 'no code is on its way')
+        self.assertNotContains(response, RESET_SENT_MESSAGE)
+        self.assertFalse(EmailOTP.objects.filter(user=self.user).exists())  # no orphan code is left
+        log = '\n'.join(logs.output)
+        self.assertIn('Gmail rejected the sign-in', log)
+        self.assertNotIn('135791', log)
+        self.assertNotIn(settings.EMAIL_HOST_PASSWORD or 'unset-password-marker', log)
+
+
+class EmailSettingsCheckTests(AuthTestCase):
+    SMTP = 'django.core.mail.backends.smtp.EmailBackend'
+
+    def check_ids(self):
+        from .checks import email_settings_check
+        return {problem.id for problem in email_settings_check(None)}
+
+    def test_missing_app_password_is_reported_at_startup(self):
+        with override_settings(EMAIL_BACKEND=self.SMTP, EMAIL_HOST_USER='me@gmail.com', EMAIL_HOST_PASSWORD='',
+                               DEFAULT_FROM_EMAIL='Explore Rwanda <me@gmail.com>'):
+            self.assertEqual(self.check_ids(), {'Tour_travels.W002'})
+
+    def test_a_sender_other_than_the_gmail_account_is_reported(self):
+        with override_settings(EMAIL_BACKEND=self.SMTP, EMAIL_HOST_USER='me@gmail.com', EMAIL_HOST_PASSWORD='x',
+                               DEFAULT_FROM_EMAIL='noreply@example.com'):
+            self.assertEqual(self.check_ids(), {'Tour_travels.W003'})
+
+    def test_complete_settings_and_the_console_backend_pass(self):
+        with override_settings(EMAIL_BACKEND=self.SMTP, EMAIL_HOST_USER='me@gmail.com', EMAIL_HOST_PASSWORD='x',
+                               DEFAULT_FROM_EMAIL='Explore Rwanda <me@gmail.com>'):
+            self.assertEqual(self.check_ids(), set())
+        with override_settings(EMAIL_BACKEND='django.core.mail.backends.console.EmailBackend',
+                               EMAIL_HOST_PASSWORD=''):
+            self.assertEqual(self.check_ids(), set())
+
+
+class CreateSuperuserTests(AuthTestCase):
+    def create(self, username, email, **kwargs):
+        env = {'DJANGO_SUPERUSER_PASSWORD': 'Strong-Admin-Pass-2026'}
+        with mock.patch.dict('os.environ', env):
+            call_command('createsuperuser', interactive=False, username=username, email=email,
+                         stdout=io.StringIO(), stderr=io.StringIO(), **kwargs)
+
+    def test_creates_an_active_staff_superuser_who_lands_on_the_admin_dashboard(self):
+        self.create('chief', 'chief@example.com')
+        chief = User.objects.get(username='chief')
+        self.assertTrue(chief.is_active and chief.is_staff and chief.is_superuser)
+        self.assertTrue(chief.profile.email_verified)
+        self.assertTrue(chief.password.startswith('argon2$'))
+        response = self.client.post(reverse('login'), {'username': 'chief@example.com',
+                                                       'password': 'Strong-Admin-Pass-2026'})
+        self.assertRedirects(response, reverse('admin_dashboard'), fetch_redirect_response=False)
+        self.assertEqual(self.client.get(reverse('admin_dashboard')).status_code, 200)
+        self.assertEqual(self.client.get('/admin/').status_code, 200)  # Django admin panel
+
+    def test_refuses_an_email_that_another_account_uses(self):
+        with self.assertRaisesMessage(CommandError, 'Another account already uses'):
+            self.create('second', self.user.email.upper())
+        self.assertFalse(User.objects.filter(username='second').exists())
+
+    def test_refuses_a_blank_email(self):
+        with self.assertRaisesMessage(CommandError, 'An email address is required'):
+            self.create('noemail', '')
+
+    def test_interactive_prompt_asks_again_for_a_taken_email(self):
+        answers = iter(['boss', self.user.email, 'boss@example.com'])
+        from .management.commands.createsuperuser import Command
+        command = Command(stdout=io.StringIO(), stderr=io.StringIO())
+        command._database = 'default'
+        email_field = User._meta.get_field('email')
+        with mock.patch('builtins.input', side_effect=lambda *_: next(answers)):
+            self.assertEqual(command.get_input_data(User._meta.get_field('username'), 'Username: '), 'boss')
+            self.assertIsNone(command.get_input_data(email_field, 'Email: '))  # taken: asked again
+            self.assertEqual(command.get_input_data(email_field, 'Email: '), 'boss@example.com')
+        self.assertIn('Another account already uses', command.stderr.getvalue())
+
+    def test_clients_cannot_open_administrator_pages(self):
+        self.client.force_login(self.user)
+        for name in ['admin_dashboard', 'admin_customers', 'admin_create']:
+            with self.subTest(page=name):
+                self.assertIn(self.client.get(reverse(name)).status_code, (302, 403))
+        self.assertEqual(self.client.get('/admin/').status_code, 302)  # Django admin sends non-staff to login
 
 
 class AuthPagesTests(AuthTestCase):

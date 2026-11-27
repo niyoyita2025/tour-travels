@@ -151,6 +151,30 @@ def _send_code_email(purpose, code, to_address):
               html_message=html)
 
 
+def describe_email_error(error):
+    """A plain explanation of why an email was not sent, for logs and the send_test_email command."""
+    import smtplib
+    import socket
+
+    if settings.EMAIL_BACKEND.endswith('smtp.EmailBackend') and not settings.EMAIL_HOST_PASSWORD:
+        return ('EMAIL_HOST_PASSWORD is empty. Gmail refuses to send without the 16-character '
+                'Google app password for EMAIL_HOST_USER.')
+    if isinstance(error, smtplib.SMTPAuthenticationError):
+        return (f'Gmail rejected the sign-in for {settings.EMAIL_HOST_USER or "(EMAIL_HOST_USER is empty)"} '
+                f'(SMTP {error.smtp_code}). Use a Google app password, not the normal Gmail password, '
+                'and check that 2-Step Verification is on for that account.')
+    if isinstance(error, smtplib.SMTPSenderRefused):
+        return f'Gmail refused the sender {settings.DEFAULT_FROM_EMAIL!r} (SMTP {error.smtp_code}).'
+    if isinstance(error, smtplib.SMTPRecipientsRefused):
+        return 'Gmail refused the recipient address.'
+    if isinstance(error, (socket.timeout, TimeoutError)):
+        return (f'Timed out connecting to {settings.EMAIL_HOST}:{settings.EMAIL_PORT}. The network or host may '
+                'block outgoing SMTP.')
+    if isinstance(error, (ConnectionError, socket.gaierror, OSError)):
+        return f'Could not connect to {settings.EMAIL_HOST}:{settings.EMAIL_PORT} ({type(error).__name__}).'
+    return f'{type(error).__name__}: {error}'
+
+
 def issue_code(user, purpose, to_email=''):
     """Create a new code, email it, and only then cancel the older codes.
 
@@ -178,9 +202,10 @@ def issue_code(user, purpose, to_email=''):
     )
     try:
         _send_code_email(purpose, code, to_email or user.email)
-    except Exception:  # noqa: BLE001 - any SMTP, network or configuration error is a delivery failure
+    except Exception as error:  # noqa: BLE001 - any SMTP, network or configuration error is a delivery failure
         otp.delete()
-        logger.exception('Could not send a %s code to user %s', purpose, user.pk)
+        # The reason names the setting to fix. It never includes the code, the message body or the password.
+        logger.error('Could not send a %s code to user %s: %s', purpose, user.pk, describe_email_error(error))
         raise DeliveryFailed from None
 
     _count_send(user, purpose)

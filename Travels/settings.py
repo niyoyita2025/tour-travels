@@ -61,13 +61,15 @@ if RENDER_EXTERNAL_HOSTNAME:
 
 
 INSTALLED_APPS = [
+    # Listed first so its createsuperuser command (email required and unique) replaces Django's.
+    # None of its template or static file names overlap with django.contrib.admin's.
+    'Tour_travels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Tour_travels',
 ]
 
 MIDDLEWARE = [

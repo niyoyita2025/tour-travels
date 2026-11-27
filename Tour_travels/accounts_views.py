@@ -44,8 +44,9 @@ LOCKOUT_SECONDS = 15 * 60
 LOCKED_MESSAGE = 'Too many failed sign-in attempts. Please wait 15 minutes, or use Forgot password.'
 SEND_LIMIT = 8  # code emails per device within LOCKOUT_SECONDS
 SEND_LIMIT_MESSAGE = 'Too many code requests from this device. Please wait 15 minutes and try again.'
-DELIVERY_FAILED_MESSAGE = ('We could not send the email right now. Please check your connection and try again '
-                           'in a moment.')
+# The visitor is told plainly that nothing was sent. The technical reason goes to the server log only.
+DELIVERY_FAILED_MESSAGE = ('The email could not be sent, so no code is on its way. Please try again in a few '
+                           'minutes. If it keeps failing, contact us.')
 RESET_SENT_MESSAGE = ('If an account is registered with that email address, a six-digit code has been sent to it. '
                       'Check your inbox and spam folder.')
 RESET_CODE_ERROR = ('That code is not valid. It may be wrong, expired or already used. '
