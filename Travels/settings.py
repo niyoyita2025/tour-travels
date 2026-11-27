@@ -7,6 +7,7 @@ Sensitive values are read from environment variables. See .env.example.
 import os
 from pathlib import Path
 
+import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -95,12 +96,23 @@ TEMPLATES = [
 WSGI_APPLICATION = 'Travels.wsgi.application'
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Production uses PostgreSQL. Set DATABASE_URL to the Postgres connection string (on Render, the
+# database's Internal Database URL). Local development falls back to SQLite when it is not set.
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, conn_health_checks=True),
     }
-}
+else:
+    if not DEBUG:
+        # SQLite lives on the server's disk, which Render erases on every deploy. Refuse to run without Postgres.
+        raise ImproperlyConfigured('Set DATABASE_URL when DJANGO_DEBUG is off. SQLite is for local development only.')
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 AUTH_PASSWORD_VALIDATORS = [
