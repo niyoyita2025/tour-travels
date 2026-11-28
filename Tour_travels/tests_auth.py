@@ -236,14 +236,17 @@ class SignUpTests(AuthTestCase):
         self.assertContains(response, TOO_MANY_CODES_MESSAGE)
         self.assertEqual(len(mail.outbox), settings.OTP_ACCOUNT_MAX_SENDS)
 
-    def test_a_failed_email_is_reported_and_can_be_retried(self):
+    def test_a_failed_email_is_reported_on_the_sign_up_page_and_can_be_retried(self):
         with mock.patch('Tour_travels.otp.send_mail', side_effect=SMTPException('Gmail is unavailable')):
-            self.register()
-        response = self.client.get(reverse('verify_email'))
+            response = self.register()
+        # Not sent on to the code page: the sign-up page says the code was not sent.
+        self.assertTemplateUsed(response, 'accounts/register.html')
         self.assertContains(response, 'email could not be sent')
         self.assertEqual(EmailOTP.objects.count(), 0)  # nothing was issued, so nothing can be entered
         self.assertEqual(len(mail.outbox), 0)
 
+        # If the code page is opened anyway, it offers no code to type, only a way to request one.
+        self.assertContains(self.client.get(reverse('verify_email')), 'There is no live code')
         self.client.post(reverse('verify_email_resend'))  # no wait is needed after a failed send
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(EmailOTP.objects.count(), 1)

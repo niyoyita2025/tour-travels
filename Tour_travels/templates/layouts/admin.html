@@ -1,4 +1,5 @@
 {% extends 'layouts/dashboard_base.html' %}
+{% load static %}
 {% comment %}
   Administrator sidebar, grouped by area: website, tours, bookings, customers, email and additional content.
   Every page linked here is administrator-only (staff_required).
@@ -55,6 +56,17 @@
   <a href="{% url 'content_list' 'detail_links' %}" class="{% if section == 'detail_links' %}active{% endif %}">Details: links</a>
   <a href="{% url 'content_list' 'detail_sections' %}" class="{% if section == 'detail_sections' %}active{% endif %}">Details: sections</a>
 
+  <p class="dash-group">IoT sensors</p>
+  <a href="{% url 'iot_monitor' %}" class="{% if url == 'iot_monitor' %}active{% endif %}">Live monitoring</a>
+  <a href="{% url 'iot_devices' %}" class="{% if url == 'iot_devices' or url == 'iot_device_new' or url == 'iot_device_edit' %}active{% endif %}">Devices</a>
+  <a href="{% url 'iot_alerts' %}" class="{% if url == 'iot_alerts' %}active{% endif %}">Alerts</a>
+  <a href="{% url 'iot_history' %}" class="{% if url == 'iot_history' %}active{% endif %}">History &amp; reports</a>
+
+  <p class="dash-group">AI &amp; analytics</p>
+  <a href="{% url 'ai_analytics' %}" class="{% if url == 'ai_analytics' %}active{% endif %}">Booking analytics</a>
+  <a href="{% url 'ai_reports' %}" class="{% if url == 'ai_reports' %}active{% endif %}">AI reports</a>
+  <a href="{% url 'ai_assistant_settings' %}" class="{% if url == 'ai_assistant_settings' %}active{% endif %}">Travel assistant</a>
+
   <p class="dash-group">Staff &amp; account</p>
   <a href="{% url 'admin_create' %}" class="{% if url == 'admin_create' %}active{% endif %}">Create administrator</a>
   <a href="{% url 'admin_activity' %}" class="{% if url == 'admin_activity' %}active{% endif %}">System activity</a>
@@ -63,3 +75,6 @@
   <a href="{% url 'password_change' %}" class="{% if url == 'password_change' %}active{% endif %}">Change password</a>
   {% endwith %}
 {% endblock %}
+
+{% block extra_head %}{{ block.super }}<link rel="stylesheet" href="{% static 'iot/monitor.css' %}">{% endblock %}
+{% block scripts %}{{ block.super }}<script src="{% static 'iot/monitor.js' %}" defer></script>{% endblock %}

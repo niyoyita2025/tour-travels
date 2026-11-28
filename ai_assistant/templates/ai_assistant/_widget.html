@@ -1,0 +1,21 @@
+{% if enabled %}
+<div class="assistant" id="assistant" data-ask-url="{% url 'assistant_ask' %}" data-greeting="{{ greeting }}" data-csrf="{{ csrf_token }}">
+  <button type="button" class="assistant-toggle" id="assistantToggle" aria-expanded="false" aria-controls="assistantPanel">
+    <span aria-hidden="true">💬</span><span class="assistant-toggle-text">Ask about tours</span>
+  </button>
+  <section class="assistant-panel" id="assistantPanel" hidden aria-label="Travel assistant">
+    <header class="assistant-head">
+      <strong>Travel assistant</strong>
+      <button type="button" class="assistant-close" id="assistantClose" aria-label="Close the travel assistant">×</button>
+    </header>
+    <p class="assistant-note">Answers come from this website's tours, prices and open dates. Please check the booking calendar before you travel.</p>
+    <div class="assistant-log" id="assistantLog" aria-live="polite"></div>
+    <div class="assistant-suggest" id="assistantSuggest"></div>
+    <form class="assistant-form" id="assistantForm" autocomplete="off">
+      <label class="visually-hidden" for="assistantInput">Your question</label>
+      <input id="assistantInput" type="text" maxlength="500" placeholder="Ask about tours, prices or dates">
+      <button type="submit">Send</button>
+    </form>
+  </section>
+</div>
+{% endif %}

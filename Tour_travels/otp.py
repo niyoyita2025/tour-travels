@@ -222,6 +222,10 @@ def describe_email_error(error):
         return (f'Gmail rejected the sign-in for {settings.EMAIL_HOST_USER or "(EMAIL_HOST_USER is empty)"} '
                 f'(SMTP {error.smtp_code}). Use a Google app password, not the normal Gmail password, '
                 'and check that 2-Step Verification is on for that account.')
+    if isinstance(error, smtplib.SMTPServerDisconnected):
+        # Gmail sometimes closes the connection instead of answering a refused sign-in.
+        return ('Gmail closed the connection during the sign-in. This usually means EMAIL_HOST_PASSWORD is not a '
+                'valid Google app password (16 characters, created under 2-Step Verification).')
     if isinstance(error, smtplib.SMTPSenderRefused):
         return f'Gmail refused the sender {settings.DEFAULT_FROM_EMAIL!r} (SMTP {error.smtp_code}).'
     if isinstance(error, smtplib.SMTPRecipientsRefused):

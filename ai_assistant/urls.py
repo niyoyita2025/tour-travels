@@ -1,0 +1,8 @@
+from django.urls import path
+
+from . import views
+
+# Mounted at /assistant/ (public chat endpoint).
+urlpatterns = [
+    path('ask/', views.ask, name='assistant_ask'),
+]

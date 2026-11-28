@@ -65,6 +65,9 @@ INSTALLED_APPS = [
     # Listed first so its createsuperuser command (email required and unique) replaces Django's.
     # None of its template or static file names overlap with django.contrib.admin's.
     'Tour_travels',
+    # IoT sensor monitoring (devices, readings, thresholds, alerts) and the AI travel assistant with booking analytics.
+    'iot',
+    'ai_assistant',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

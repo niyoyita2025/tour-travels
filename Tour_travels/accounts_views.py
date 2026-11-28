@@ -144,17 +144,25 @@ def _pending_signup(request):
 
 
 def _deliver_signup_code(request, user):
+    """Email a sign-up code. Returns True only when a code is on its way (or one was sent a moment ago).
+
+    On False the visitor stays on their current page with the reason shown. They are not sent to the
+    code page, because there is no code to type in.
+    """
     try:
         otp.issue_code(user, otp.SIGNUP)
     except otp.ResendTooSoon as wait:
         messages.info(request, f'A code was sent a moment ago. You can request another in {wait.seconds} seconds.')
+        return True
     except otp.TooManyCodes:
         messages.error(request, TOO_MANY_CODES_MESSAGE)
+        return False
     except otp.DeliveryFailed:
         messages.error(request, DELIVERY_FAILED_MESSAGE)
-    else:
-        messages.success(request, f'Verification code sent to {otp.mask_email(user.email)}. '
-                                  f'It expires in {settings.OTP_LIFETIME_SECONDS // 60} minutes.')
+        return False
+    messages.success(request, f'Verification code sent to {otp.mask_email(user.email)}. '
+                              f'It expires in {settings.OTP_LIFETIME_SECONDS // 60} minutes.')
+    return True
 
 
 def _signup_error(result):
@@ -200,16 +208,17 @@ def _session_timers(request):
 
 
 def _send_reset_code(request, email):
-    """Email a reset code if the address belongs to an active account.
+    """Email a reset code if the address belongs to an active account. Returns False when the email was
+    not accepted by Gmail, so the caller keeps the visitor on the page with the reason shown.
 
-    The visitor sees the same success message either way. Only a delivery failure differs, and that
-    failure is a problem with the mail service, not with the address.
+    An unknown address gets the same success message as a real one. Only a real account can fail to
+    receive a code, because no email is attempted for an unknown address.
     """
     request.session[RESET_REQUESTED_AT] = timezone.now().timestamp()
     user = _active_account(email)
     if user is None:
         messages.success(request, RESET_SENT_MESSAGE)
-        return
+        return True
     try:
         otp.issue_code(user, otp.RESET)
     except (otp.ResendTooSoon, otp.TooManyCodes):
@@ -217,8 +226,10 @@ def _send_reset_code(request, email):
         messages.success(request, RESET_SENT_MESSAGE)
     except otp.DeliveryFailed:
         messages.error(request, DELIVERY_FAILED_MESSAGE)
+        return False
     else:
         messages.success(request, RESET_SENT_MESSAGE)
+    return True
 
 
 def _reset_user(request):
@@ -300,7 +311,11 @@ class RoleLoginView(ThrottledLoginMixin, LoginView):
     def form_invalid(self, form):
         unverified = _unverified_sign_in(self.request.POST.get('username'), self.request.POST.get('password'))
         if unverified is not None:
-            return _resume_verification(self.request, unverified)
+            response = _resume_verification(self.request, unverified)
+            if response is not None:
+                return response
+            # The code could not be sent: stay on the sign-in page, which shows the reason.
+            return self.render_to_response(self.get_context_data(form=form))
         return super().form_invalid(form)
 
     def get_success_url(self):
@@ -316,13 +331,18 @@ class RoleLoginView(ThrottledLoginMixin, LoginView):
 
 
 def _resume_verification(request, user):
+    """An unverified account signed in with the right password: email a code and go to the code page.
+
+    Returns None when no code could be sent. The caller then keeps the sign-in page open with the reason.
+    """
     request.session[SIGNUP_USER] = user.pk
     request.session[SIGNUP_NEXT] = _explicit_next(request)
-    messages.info(request, 'Your account is not verified yet. Enter the code we emailed you to activate it.')
-    if _send_allowed(request):
-        _deliver_signup_code(request, user)
-    else:
+    if not _send_allowed(request):
         messages.error(request, SEND_LIMIT_MESSAGE)
+        return None
+    if not _deliver_signup_code(request, user):
+        return None
+    messages.info(request, 'Your account is not verified yet. Enter the code we emailed you to activate it.')
     return redirect('verify_email')
 
 
@@ -351,7 +371,9 @@ def _start_signup(request, form):
         user = _create_unverified_user(form.cleaned_data)
     request.session[SIGNUP_USER] = user.pk
     request.session[SIGNUP_NEXT] = _explicit_next(request)
-    _deliver_signup_code(request, user)
+    if not _deliver_signup_code(request, user):
+        # Stay on the sign-up page with the reason. The account is kept, so submitting again sends a new code.
+        return render(request, 'accounts/register.html', {'form': form})
     return redirect('verify_email')
 
 
@@ -406,10 +428,12 @@ def forgot_password(request):
             for key in RESET_KEYS:
                 request.session.pop(key, None)
             request.session[RESET_EMAIL] = email
-            if _send_allowed(request):
-                _send_reset_code(request, email)
-            else:
+            if not _send_allowed(request):
                 messages.error(request, SEND_LIMIT_MESSAGE)
+                return redirect('password_reset_verify')
+            if not _send_reset_code(request, email):
+                # Gmail did not accept the code: stay here with the reason, not on a code page with no code.
+                return render(request, 'accounts/password_reset_form.html', {'form': form})
             return redirect('password_reset_verify')
     else:
         form = ForgotPasswordForm()

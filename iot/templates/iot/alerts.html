@@ -1,0 +1,43 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Alerts{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'iot_monitor' %}">← Sensor monitoring</a></span>
+    <h1>Alerts</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Acknowledge an alert to show you have seen it. It closes by itself when the device is back in range.</p>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a class="btn btn-sm {% if state == 'open' %}btn-dark{% else %}btn-light{% endif %}" href="?state=open">Open</a>
+    <a class="btn btn-sm {% if state == 'resolved' %}btn-dark{% else %}btn-light{% endif %}" href="?state=resolved">Closed</a>
+    <a class="btn btn-sm {% if state == 'all' %}btn-dark{% else %}btn-light{% endif %}" href="?state=all">All</a>
+  </div>
+</div>
+<div class="panel">
+  <div class="table-wrap"><table>
+    <thead><tr><th>Opened</th><th>Device</th><th>Alert</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for alert in alerts %}
+        <tr>
+          <td>{{ alert.opened_at|date:"j M H:i" }}</td>
+          <td>{{ alert.device.name }}</td>
+          <td>{{ alert.message }}<br><small>{{ alert.get_kind_display }}</small></td>
+          <td><span class="status {% if alert.status == 'open' %}cancelled{% else %}confirmed{% endif %}">{{ alert.get_status_display }}</span>
+            {% if alert.acknowledged_at %}<br><small>Acknowledged</small>{% endif %}</td>
+          <td style="white-space:nowrap">
+            {% if alert.status == 'open' %}
+              {% if not alert.acknowledged_at %}
+                <form class="inline-form" method="post" action="{% url 'iot_alert_action' alert.pk 'acknowledge' %}">{% csrf_token %}<button class="btn btn-light btn-sm" type="submit">Acknowledge</button></form>
+              {% endif %}
+              <form class="inline-form" method="post" action="{% url 'iot_alert_action' alert.pk 'resolve' %}">{% csrf_token %}<button class="btn btn-light btn-sm" type="submit">Close</button></form>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" style="color:var(--muted)">No alerts here.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Sensor monitoring{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">IoT sensors</span>
+    <h1>Live sensor monitoring</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Readings from your ESP32 and ESP8266 boards, updated every few seconds. Alerts appear as pop-up notices on every admin page.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-light" type="button" id="iotSoundBtn" aria-pressed="false">Turn on alert sounds</button>
+    <a class="btn btn-dark" href="{% url 'iot_device_new' %}">Add a device</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat"><span>Devices online</span><strong id="iotOnline">{{ online_count }}</strong></div>
+  <div class="stat"><span>Offline or silent</span><strong id="iotOffline">{{ offline_count }}</strong></div>
+  <div class="stat"><span>Open alerts</span><strong id="iotOpen">{{ open_count }}</strong></div>
+  <div class="stat"><span>Readings, last 24 hours</span><strong>{{ readings_today }}</strong></div>
+</div>
+
+<div class="panel">
+  <h2>Devices</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Device</th><th>Status</th><th>Last report</th><th>Latest readings</th></tr></thead>
+    <tbody id="iotDeviceRows">
+      {% for d in devices %}
+        <tr data-device-id="{{ d.id }}">
+          <td><strong>{{ d.name }}</strong><br><small>{{ d.device_id }}{% if d.location %} · {{ d.location }}{% endif %}</small></td>
+          <td><span class="status {% if d.status == 'online' %}confirmed{% else %}cancelled{% endif %}">{{ d.status_label }}</span></td>
+          <td>{{ d.last_seen }}</td>
+          <td>{% for key, v in d.values.items %}<div>{{ v.label }}: <strong>{{ v.value }} {{ v.unit }}</strong> <small>({{ v.at }})</small></div>{% empty %}<small>No readings yet</small>{% endfor %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" style="color:var(--muted)">No devices yet. <a class="linkish" href="{% url 'iot_device_new' %}">Register your first device</a>.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="help" style="margin-top:10px"><a class="linkish" href="{% url 'iot_devices' %}">Manage devices</a> · <a class="linkish" href="{% url 'iot_alerts' %}">All alerts</a> · <a class="linkish" href="{% url 'iot_history' %}">History and reports</a></p>
+</div>
+
+<div class="panel" style="margin-top:22px">
+  <h2>Open alerts</h2>
+  {% for alert in open_alerts %}
+    <div class="notif"><strong>{{ alert.message }}</strong><small>{{ alert.opened_at|date:"j M H:i" }} · {{ alert.get_kind_display }}</small></div>
+  {% empty %}
+    <p style="color:var(--muted)">No open alerts. Every reading is within its limits.</p>
+  {% endfor %}
+</div>
+{% endblock %}

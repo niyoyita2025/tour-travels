@@ -1,0 +1,32 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Travel assistant settings{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">AI &amp; analytics</span>
+    <h1>Travel assistant</h1>
+    <p style="color:var(--muted);margin:6px 0 0">The chat button on the public website. Answers come from the tours, prices, dates and policies already on the site.</p>
+  </div>
+</div>
+
+<div class="layout-2">
+  <div class="panel">
+    <h2>How it answers</h2>
+    <ul style="line-height:1.7">
+      <li>Every answer is built from the database when the question is asked: destinations, tours, prices, durations, open dates and the booking policy.</li>
+      <li>If the website has no information, the assistant says so and points to the contact page. It does not guess.</li>
+      <li>Questions about other people's bookings are refused. Customer details are never read or shown.</li>
+      <li>A language model is optional. {% if key_configured %}The server has an API key, so you can turn the option on.{% else %}The server has no API key, so answers are rule-based until one is set on the server.{% endif %}</li>
+    </ul>
+    <p class="help">The API key is set in the server's environment (ANTHROPIC_API_KEY). It is never shown or stored on this page.</p>
+  </div>
+
+  <form class="form-card" method="post" novalidate>
+    {% csrf_token %}
+    <h2>Settings</h2>
+    <div class="form-grid">{% include '_form_fields.html' %}</div>
+    <div class="form-foot"><button class="btn btn-dark" type="submit">Save settings</button></div>
+  </form>
+</div>
+{% endblock %}

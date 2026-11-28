@@ -6,6 +6,11 @@ from django.views.static import serve
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # IoT sensors: administrator pages, the device endpoint, and the AI assistant and analytics.
+    path('manage/iot/', include('iot.urls')),
+    path('api/iot/', include('iot.api_urls')),
+    path('manage/ai/', include('ai_assistant.admin_urls')),
+    path('assistant/', include('ai_assistant.urls')),
     path('', include('Tour_travels.urls')),
 ]
 

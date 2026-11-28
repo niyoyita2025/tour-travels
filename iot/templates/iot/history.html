@@ -1,0 +1,51 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Sensor history{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'iot_monitor' %}">← Sensor monitoring</a></span>
+    <h1>History and reports</h1>
+  </div>
+</div>
+<form method="get" class="panel" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+  <label>Device<br><select class="input" name="device" style="width:auto"><option value="">All devices</option>
+    {% for d in devices %}<option value="{{ d.pk }}"{% if device_pk == d.pk|stringformat:"s" %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></label>
+  <label>Measurement<br><select class="input" name="metric" style="width:auto"><option value="">All</option>
+    {% for m in metrics %}<option value="{{ m.key }}"{% if metric == m.key %} selected{% endif %}>{{ m.label }}</option>{% endfor %}</select></label>
+  <label>Period<br><select class="input" name="days" style="width:auto">
+    {% for value, days_value in windows.items %}<option value="{{ value }}"{% if days == days_value %} selected{% endif %}>{{ value }} day{{ days_value|pluralize }}</option>{% endfor %}</select></label>
+  <button class="btn btn-dark" type="submit">Show</button>
+  <a class="btn btn-light" href="?device={{ device_pk }}&metric={{ metric }}&days={{ days }}&format=csv">Download CSV report</a>
+</form>
+
+<div class="stat-grid" style="margin-top:18px">
+  <div class="stat"><span>Readings</span><strong>{{ summary.count|default:0 }}</strong></div>
+  <div class="stat"><span>Lowest</span><strong>{{ summary.low|floatformat:"1"|default:"—" }}</strong></div>
+  <div class="stat"><span>Average</span><strong>{{ summary.average|floatformat:"1"|default:"—" }}</strong></div>
+  <div class="stat"><span>Highest</span><strong>{{ summary.high|floatformat:"1"|default:"—" }}</strong></div>
+</div>
+
+{% if points %}
+<div class="panel" style="margin-top:18px">
+  <h2>{% if chart_metric %}{{ chart_metric.label }} ({{ chart_metric.unit }}){% else %}Readings{% endif %}</h2>
+  <svg viewBox="0 0 640 160" width="100%" role="img" aria-label="Readings over time" style="background:#f6f8f5;border-radius:12px">
+    <polyline fill="none" stroke="#1e5948" stroke-width="2.5" points="{{ points }}"/>
+  </svg>
+</div>
+{% endif %}
+
+<div class="panel" style="margin-top:18px">
+  <h2>Latest readings</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Measured</th><th>Device</th><th>Measurement</th><th>Value</th></tr></thead>
+    <tbody>
+      {% for r in readings %}
+        <tr><td>{{ r.recorded_at|date:"j M H:i:s" }}</td><td>{{ r.device.name }}</td><td>{{ r.metric }}</td><td>{{ r.value|floatformat:"-2" }}</td></tr>
+      {% empty %}
+        <tr><td colspan="4" style="color:var(--muted)">No readings in this period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

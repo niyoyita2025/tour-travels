@@ -1,0 +1,24 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Device token{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'iot_devices' %}">← Devices</a></span>
+    <h1>Token for {{ device.name }}</h1>
+  </div>
+</div>
+<div class="panel" style="max-width:820px">
+  <div class="alert alert-warning">Copy this token now. It is shown only once. The website keeps only a secure hash of it, so it cannot be shown again. If it is lost, use "Replace token" to make a new one.</div>
+  <p><strong>Token</strong></p>
+  <pre style="white-space:pre-wrap;word-break:break-all;background:#f3f6f4;padding:14px;border-radius:12px;user-select:all">{{ token }}</pre>
+  <p><strong>Send readings to</strong></p>
+  <pre style="white-space:pre-wrap;background:#f3f6f4;padding:14px;border-radius:12px">POST {{ request.scheme }}://{{ request.get_host }}{{ api_path }}
+Authorization: Bearer TOKEN
+Content-Type: application/json
+
+{"readings": {"temperature": 23.5, "humidity": 58}}</pre>
+  <p class="help">Use HTTPS on the live site. A complete firmware example is in the project's iot/firmware folder.</p>
+  <p><a class="btn btn-dark" href="{% url 'iot_monitor' %}">Done, go to monitoring</a></p>
+</div>
+{% endblock %}

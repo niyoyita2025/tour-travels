@@ -1,0 +1,28 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}AI reports{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">AI &amp; analytics</span>
+    <h1>Booking reports</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Each report is written by fixed rules from the booking numbers, so every statement can be traced to the data. Reports hold totals and patterns only.</p>
+  </div>
+  <form method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    {% csrf_token %}
+    <label>Period<br><select class="input" name="days" style="width:auto">
+      {% for w in windows %}<option value="{{ w }}"{% if w == 180 %} selected{% endif %}>{{ w }} days</option>{% endfor %}
+    </select></label>
+    <button class="btn btn-dark" type="submit">Generate a report</button>
+  </form>
+</div>
+
+{% for report in reports %}
+  <details class="panel" style="margin-bottom:14px" {% if forloop.first %}open{% endif %}>
+    <summary style="cursor:pointer;font-weight:700">{{ report.title }} <small style="color:var(--muted);font-weight:400">· created {{ report.created_at|date:"j M Y H:i" }}{% if report.created_by %} by {{ report.created_by.first_name|default:"an administrator" }}{% endif %}</small></summary>
+    <pre style="white-space:pre-wrap;font-family:inherit;line-height:1.6;margin:14px 0 0">{{ report.body }}</pre>
+  </details>
+{% empty %}
+  <div class="panel"><p style="color:var(--muted)">No reports yet. Generate one above.</p></div>
+{% endfor %}
+{% endblock %}

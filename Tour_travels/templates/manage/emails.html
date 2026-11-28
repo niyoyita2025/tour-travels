@@ -42,6 +42,11 @@
         <tr><th>Sent / failed (all time)</th><td>{{ sent_count }} / {{ failed_count }}</td></tr>
       </tbody>
     </table></div>
+    <form method="post" action="{% url 'email_center' %}" style="margin-top:12px">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="check">
+      <button class="btn btn-light" type="submit">Check Gmail sign-in (sends nothing)</button>
+    </form>
     <p class="help" style="margin-top:10px">Passwords are never shown or stored here. They live only in the server's environment settings.</p>
     {% endif %}
   </section>

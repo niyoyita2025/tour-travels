@@ -12,6 +12,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
 from . import notifications
+from .email_diagnostics import check_sign_in
 from .emails import Message, absolute, deliver
 from .forms import BrandingForm, NotificationSettingsForm, PoliciesForm
 from .models import EmailLog, SiteSettings
@@ -102,6 +103,12 @@ def gmail_status():
 @staff_required
 def email_center(request):
     site = SiteSettings.load()
+    if request.method == 'POST' and request.POST.get('action') == 'check':
+        ok, message = check_sign_in()
+        notifications.log_activity(request.user, 'email.check',
+                                   'Gmail sign-in check: ' + ('accepted' if ok else 'refused'))
+        (messages.success if ok else messages.error)(request, message)
+        return redirect('email_center')
     if request.method == 'POST' and request.POST.get('action') == 'settings':
         form = NotificationSettingsForm(request.POST, instance=site)
         if form.is_valid():

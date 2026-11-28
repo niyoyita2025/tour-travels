@@ -1,0 +1,43 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Alert limits{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'iot_devices' %}">← Devices</a></span>
+    <h1>Alert limits for {{ device.name }}</h1>
+    <p style="color:var(--muted);margin:6px 0 0">An alert opens when a reading goes above the maximum or below the minimum. It closes when the reading is back in range. Repeated readings do not create new alerts.</p>
+  </div>
+</div>
+<div class="layout-2">
+  <div class="panel">
+    <h2>Limits set</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Measurement</th><th>Alert below</th><th>Alert above</th><th>Enabled</th><th></th></tr></thead>
+      <tbody>
+        {% for item in thresholds %}
+          <tr>
+            <td>{{ item.get_metric_display }}</td>
+            <td>{% if item.minimum is not None %}{{ item.minimum|floatformat:"-2" }}{% else %}—{% endif %}</td>
+            <td>{% if item.maximum is not None %}{{ item.maximum|floatformat:"-2" }}{% else %}—{% endif %}</td>
+            <td>{% if item.is_enabled %}Yes{% else %}No{% endif %}</td>
+            <td>
+              <form class="inline-form" method="post" action="{% url 'iot_threshold_delete' item.pk %}">{% csrf_token %}
+                <button class="btn btn-light btn-sm" type="submit">Remove</button></form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" style="color:var(--muted)">No limits yet. Add one on the right.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+  <form class="form-card" method="post" novalidate>
+    {% csrf_token %}
+    <h2>Set a limit</h2>
+    <div class="form-grid">{% include '_form_fields.html' %}</div>
+    <div class="form-foot"><button class="btn btn-dark" type="submit">Save limit</button>
+      <small>Setting a measurement again replaces its limit.</small></div>
+  </form>
+</div>
+{% endblock %}

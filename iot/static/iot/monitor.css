@@ -1,0 +1,18 @@
+/* Sensor alert pop-ups for administrators. Stacked in the bottom-right corner, above the page. */
+.iot-toasts {
+  position: fixed; right: 18px; bottom: 18px; z-index: 60;
+  display: grid; gap: 10px; width: min(360px, calc(100% - 36px));
+}
+.iot-toast {
+  position: relative; background: #fff4f2; color: #6b2a22; border: 1px solid #efc8c3; border-left: 6px solid #b3412e;
+  border-radius: 14px; padding: 14px 40px 14px 16px; box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
+  font-size: .9rem; line-height: 1.4;
+}
+.iot-toast strong { display: block; margin-bottom: 4px; }
+.iot-toast small { display: block; margin-top: 6px; opacity: .75; }
+.iot-toast-close {
+  position: absolute; top: 8px; right: 10px; border: 0; background: transparent; font-size: 1.3rem;
+  line-height: 1; color: inherit; cursor: pointer; padding: 4px;
+}
+.iot-toast-close:focus-visible { outline: 3px solid #e6b85c; outline-offset: 2px; }
+html[data-theme="dark"] .iot-toast { background: #3a1f1c; color: #f5c2bb; border-color: #6b3a35; }

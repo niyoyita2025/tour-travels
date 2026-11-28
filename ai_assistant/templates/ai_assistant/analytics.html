@@ -1,0 +1,98 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Booking analytics{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">AI &amp; analytics</span>
+    <h1>Booking analytics</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Patterns from bookings already on the website. Totals only: no customer names, e-mails or phone numbers are shown.</p>
+  </div>
+  <form method="get" style="display:flex;gap:8px;align-items:center">
+    <label>Look back<br><select class="input" name="days" style="width:auto" onchange="this.form.submit()">
+      {% for w in windows %}<option value="{{ w }}"{% if w == days %} selected{% endif %}>{{ w }} days</option>{% endfor %}
+    </select></label>
+  </form>
+</div>
+
+<div class="stat-grid">
+  <div class="stat"><span>Bookings</span><strong>{{ data.summary.bookings }}</strong></div>
+  <div class="stat"><span>Guests</span><strong>{{ data.summary.guests }}</strong></div>
+  <div class="stat"><span>Average group</span><strong>{{ data.summary.average_group }}</strong></div>
+  <div class="stat"><span>Confirmed and completed</span><strong>USD {{ data.summary.revenue|floatformat:2 }}</strong></div>
+</div>
+
+<div class="layout-2" style="margin-top:18px">
+  <section class="panel">
+    <h2>Popular tours</h2>
+    {% for t in data.popular_tours %}
+      <div class="notif"><strong>{{ t.name }}</strong><small>{{ t.guests }} guests in {{ t.bookings }} booking{{ t.bookings|pluralize }}</small></div>
+    {% empty %}<p style="color:var(--muted)">No bookings in this period yet.</p>{% endfor %}
+    <h2 style="margin-top:22px">Popular destinations</h2>
+    {% for d in data.popular_destinations %}
+      <div class="notif"><strong>{{ d.name }}</strong><small>{{ d.guests }} guests in {{ d.bookings }} booking{{ d.bookings|pluralize }}</small></div>
+    {% empty %}<p style="color:var(--muted)">No destinations were chosen on bookings in this period.</p>{% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2>Demand by weekday</h2>
+    {% for row in data.weekdays %}
+      <div style="display:grid;grid-template-columns:110px 1fr 70px;gap:10px;align-items:center;margin:6px 0">
+        <span>{{ row.day }}</span>
+        <div style="background:#eef2ef;border-radius:999px;height:12px;overflow:hidden"><div style="width:{{ row.share }}%;height:100%;background:#1e5948"></div></div>
+        <small>{{ row.guests }} · {{ row.share }}%</small>
+      </div>
+    {% endfor %}
+    <h2 style="margin-top:22px">Demand by start time</h2>
+    {% for row in data.start_times %}
+      <div class="notif"><strong>{{ row.start }}</strong><small>{{ row.guests }} guests · {{ row.share }}% of demand</small></div>
+    {% empty %}<p style="color:var(--muted)">No start times yet.</p>{% endfor %}
+  </section>
+</div>
+
+<div class="layout-2" style="margin-top:18px">
+  <section class="panel">
+    <h2>High and low demand months</h2>
+    {% if data.periods.months %}
+      <div class="table-wrap"><table>
+        <thead><tr><th>Month</th><th>Guests</th><th>Compared with average</th><th>Level</th></tr></thead>
+        <tbody>
+          {% for m in data.periods.months %}
+            <tr><td>{{ m.month }}</td><td>{{ m.guests }}</td><td>{{ m.ratio }}×</td>
+              <td><span class="status {% if m.level == 'high' %}confirmed{% elif m.level == 'low' %}cancelled{% endif %}">{{ m.level|capfirst }}</span></td></tr>
+          {% endfor %}
+        </tbody>
+      </table></div>
+    {% else %}<p style="color:var(--muted)">{{ data.periods.note }}</p>{% endif %}
+    <h2 style="margin-top:22px">Start times with no bookable date</h2>
+    {% if data.capacity %}
+      <p>Popular start times that have no open date in the next 60 days: <strong>{{ data.capacity|join:", " }}</strong>. Consider opening dates at these times on the schedule page.</p>
+    {% else %}<p style="color:var(--muted)">Every popular start time has an open date.</p>{% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Forecast</h2>
+    <p style="color:var(--muted)">{{ data.forecast.method }}</p>
+    {% if data.forecast.weeks %}
+      <p>Demand is <strong>{{ data.forecast.trend }}</strong>.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Week starting</th><th>Expected guests (estimate)</th></tr></thead>
+        <tbody>{% for w in data.forecast.weeks %}<tr><td>{{ w.week_start|date:"j M Y" }}</td><td>{{ w.guests }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    {% endif %}
+  </section>
+</div>
+
+<section class="panel" style="margin-top:18px">
+  <h2>Recommended dates</h2>
+  <p style="color:var(--muted)">Only dates the calendar reports as bookable are listed, ranked by how often that weekday and start time were booked. Seats shown are seats left now. Recommendations never add capacity.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Tour</th><th>Date</th><th>Starts</th><th>Seats left</th><th>Why</th></tr></thead>
+    <tbody>
+      {% for r in data.recommendations %}
+        <tr><td>{{ r.tour }}</td><td>{{ r.date|date:"D j M Y" }}</td><td>{{ r.start }}</td><td>{{ r.seats_left }}</td><td>{{ r.note }}</td></tr>
+      {% empty %}<tr><td colspan="5" style="color:var(--muted)">No bookable dates in the next 60 days.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endblock %}

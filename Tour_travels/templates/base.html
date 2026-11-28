@@ -1,4 +1,4 @@
-{% load static %}<!DOCTYPE html>
+{% load static assistant_tags %}<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
@@ -27,6 +27,7 @@
   <link rel="stylesheet" href="{% static 'css/footer.css' %}">
   <link rel="stylesheet" href="{% static 'css/sections.css' %}">
   <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  <link rel="stylesheet" href="{% static 'ai_assistant/assistant.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
 <body {% block body_attrs %}{% endblock %}>
@@ -102,7 +103,9 @@
     }
   </script>
   <script src="https://translate.google.com/translate_a/element.js?cb=erTranslateInit" defer></script>
+  {% assistant_widget %}
   <script src="{% static 'js/site.js' %}"></script>
+  <script src="{% static 'ai_assistant/assistant.js' %}" defer></script>
   <script src="{% static 'js/password-toggle.js' %}" defer></script>
   <script src="{% static 'js/language.js' %}" defer></script>
   {% block scripts %}{% endblock %}

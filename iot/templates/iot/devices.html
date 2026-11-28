@@ -1,0 +1,43 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}IoT devices{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker"><a href="{% url 'iot_monitor' %}">← Sensor monitoring</a></span>
+    <h1>Devices</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Each board has its own token. A deactivated device's readings are refused until it is activated again.</p>
+  </div>
+  <a class="btn btn-dark" href="{% url 'iot_device_new' %}">Add a device</a>
+</div>
+<div class="panel">
+  <div class="table-wrap"><table>
+    <thead><tr><th>Device</th><th>Kind</th><th>Expected measurements</th><th>Status</th><th>Readings stored</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td><strong>{{ row.device.name }}</strong><br><small>{{ row.device.device_id }}</small></td>
+          <td>{{ row.device.get_kind_display }}</td>
+          <td>{{ row.device.expected_metrics|default:"—" }}</td>
+          <td><span class="status {% if row.device.status == 'online' %}confirmed{% else %}cancelled{% endif %}">{{ row.status_label }}</span></td>
+          <td>{{ row.readings }}</td>
+          <td style="white-space:nowrap">
+            <a class="btn btn-light btn-sm" href="{% url 'iot_device_edit' row.device.pk %}">Edit</a>
+            <a class="btn btn-light btn-sm" href="{% url 'iot_thresholds' row.device.pk %}">Alert limits</a>
+            <form class="inline-form" method="post" action="{% url 'iot_device_toggle' row.device.pk %}">{% csrf_token %}
+              <button class="btn btn-light btn-sm" type="submit">{% if row.device.is_active %}Deactivate{% else %}Activate{% endif %}</button></form>
+            <form class="inline-form" method="post" action="{% url 'iot_device_token' row.device.pk %}" onsubmit="return confirm('Replace the token? The board stops working until you give it the new one.');">{% csrf_token %}
+              <button class="btn btn-light btn-sm" type="submit">Replace token</button></form>
+            {% if not row.readings %}
+            <form class="inline-form" method="post" action="{% url 'iot_device_delete' row.device.pk %}" onsubmit="return confirm('Delete this device?');">{% csrf_token %}
+              <button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" style="color:var(--muted)">No devices registered yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}
