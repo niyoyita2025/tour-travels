@@ -236,9 +236,14 @@ def _submit_booking(request, package):
             form.add_error(None, str(exc))
         else:
             clear_intent(request)
-            notifications.booking_received(booking)
-            messages.success(request, f'Booking request {booking.reference} received. '
-                                      'Check your email for details.')
+            if notifications.booking_received(booking):
+                messages.success(request, f'Booking request {booking.reference} received. '
+                                          f'A confirmation email was sent to {booking.email}.')
+            else:
+                # The booking is saved either way. Only claim an email when the mail server accepted it.
+                messages.warning(request, f'Booking request {booking.reference} received. We could not send '
+                                          'the confirmation email right now, but your booking is saved and '
+                                          'shown below.')
             return redirect('booking_detail', reference=booking.reference)
     return render(request, 'booking_form.html', {'form': form, 'package': package, 'schedule': schedule})
 

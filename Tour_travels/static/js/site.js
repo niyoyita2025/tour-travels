@@ -20,6 +20,14 @@
   bindToggle('menuBtn', 'navLinks', 'a');
   bindToggle('dashToggle', 'dashSidebar', 'a');
 
+  // Fixed header: add a shadow once the page has scrolled, so it stands out from the content under it.
+  var nav = document.getElementById('siteNav');
+  if (nav) {
+    var onScroll = function () { nav.classList.toggle('is-scrolled', window.scrollY > 8); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+
   // Dark / light mode. The page starts in the saved or device theme (see the script in base.html).
   var KEY = 'er-theme';
   var root = document.documentElement;

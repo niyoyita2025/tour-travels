@@ -3,7 +3,7 @@ from django.urls import path, reverse_lazy
 
 from . import (
     accounts_views, admin_schedule_views, admin_views, booking_views, client_views, content_views, manage_views,
-    profile_views, views,
+    profile_views, views, website_views,
 )
 
 urlpatterns = [
@@ -13,6 +13,7 @@ urlpatterns = [
     path('details/', manage_views.details_page, name='details'),
     path('faq/', views.faq, name='faq'),
     path('contact/', views.contact, name='contact'),
+    path('policies/<slug:slug>/', website_views.policy_page, name='policy'),
     path('destinations/', views.destination_list, name='destinations'),
     path('destinations/<slug:slug>/', views.destination_detail, name='destination_detail'),
     path('tours/', views.package_list, name='packages'),
@@ -34,7 +35,7 @@ urlpatterns = [
     path('profile/email/', profile_views.request_email_change, name='profile_email'),
     path('profile/email/verify/', profile_views.verify_email_change, name='profile_email_verify'),
     path('profile/email/resend/', profile_views.resend_email_change, name='profile_email_resend'),
-    path('password-change/', auth_views.PasswordChangeView.as_view(
+    path('password-change/', accounts_views.NotifyingPasswordChangeView.as_view(
         template_name='accounts/password_change_form.html',
         success_url=reverse_lazy('password_change_done')), name='password_change'),
     path('password-change/done/', auth_views.PasswordChangeDoneView.as_view(
@@ -97,6 +98,11 @@ urlpatterns = [
          name='admin_scheduling_off'),
 
     # Control Panel: each management area has its own page and form
+    path('manage/branding/', website_views.branding_manage, name='branding_manage'),
+    path('manage/branding/remove/<str:field>/', website_views.branding_remove, name='branding_remove'),
+    path('manage/policies/', website_views.policies_manage, name='policies_manage'),
+    path('manage/emails/', website_views.email_center, name='email_center'),
+    path('manage/emails/test/', website_views.email_test, name='email_test'),
     path('manage/backgrounds/', manage_views.background_manage, name='background_manage'),
     path('manage/backgrounds/<str:section>/save/', manage_views.background_save, name='background_save'),
     path('manage/contact/', manage_views.contact_manage, name='contact_manage'),

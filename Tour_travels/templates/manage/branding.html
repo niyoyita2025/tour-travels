@@ -1,0 +1,48 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Branding{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Website management</span>
+    <h1>Logo, name and favicon</h1>
+    <p style="color:var(--muted);margin:6px 0 0">The website name, logo and browser icon appear on every page, in the dashboards and in every email. Changes are live as soon as you save.</p>
+  </div>
+  <a class="btn btn-light" href="{% url 'home' %}" target="_blank" rel="noopener">View website ↗</a>
+</div>
+
+<div class="layout-2">
+  <form class="form-card" method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <h2>Branding</h2>
+    <div class="form-grid">{% include '_form_fields.html' %}</div>
+    <div class="form-foot">
+      <button class="btn btn-dark" type="submit">Save branding</button>
+      <small>Logos: JPG, PNG or WebP up to 5 MB. Favicon: square PNG or ICO up to 512 KB.</small>
+    </div>
+  </form>
+
+  <aside class="panel brand-preview">
+    <h2>Current branding</h2>
+    <p class="help">How the header shows it now.</p>
+    <div class="brand-sample">
+      {% include '_brand.html' %}
+    </div>
+    {% if site.logo %}
+      <div class="brand-file"><img src="{{ site.logo.url }}" alt="" height="40"> <span>Logo</span>
+        <form method="post" action="{% url 'branding_remove' 'logo' %}">{% csrf_token %}<button class="btn btn-light btn-sm" type="submit">Remove</button></form></div>
+    {% endif %}
+    {% if site.logo_dark %}
+      <div class="brand-file brand-file-dark"><img src="{{ site.logo_dark.url }}" alt="" height="40"> <span>Dark logo</span>
+        <form method="post" action="{% url 'branding_remove' 'logo_dark' %}">{% csrf_token %}<button class="btn btn-light btn-sm" type="submit">Remove</button></form></div>
+    {% endif %}
+    {% if site.favicon %}
+      <div class="brand-file"><img src="{{ site.favicon.url }}" alt="" height="32" width="32"> <span>Favicon</span>
+        <form method="post" action="{% url 'branding_remove' 'favicon' %}">{% csrf_token %}<button class="btn btn-light btn-sm" type="submit">Remove</button></form></div>
+    {% endif %}
+    {% if not site.logo and not site.favicon %}
+      <p class="help">No logo yet: the header shows the first letter of the website name.</p>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

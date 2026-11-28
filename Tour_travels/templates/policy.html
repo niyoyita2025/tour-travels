@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<section class="page-hero"><div class="container">
+  <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / {{ title }}</div>
+  <h1>{{ title }}</h1>
+</div></section>
+
+<section class="page-section"><div class="container policy-text">
+  {% for paragraph in paragraphs %}<p>{{ paragraph|linebreaksbr }}</p>{% endfor %}
+</div></section>
+{% endblock %}

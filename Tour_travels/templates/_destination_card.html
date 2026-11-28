@@ -4,7 +4,7 @@
   </a>
   <div class="dest-tile-body">
     <h3>{{ destination.name }}</h3>
-    <p class="dest-desc">{{ destination.description|truncatechars:150 }}</p>
+    <p class="dest-desc">{{ destination.short_text|truncatechars:150 }}</p>
     <div class="dest-tile-actions">
       <a class="btn btn-dark btn-sm" href="{{ destination.get_absolute_url }}">Details</a>
       <a class="dest-map" target="_blank" rel="noopener" href="{{ destination.map_url }}">Map <span aria-hidden="true">↗</span></a>

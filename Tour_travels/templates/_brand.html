@@ -1,0 +1,13 @@
+{% comment %}
+  The website logo and name, shared by the header, the dashboards, the footer and the branding preview.
+  With a logo, the logo is shown; a dark-mode logo replaces it in dark mode. Without one, the letter mark is shown.
+{% endcomment %}
+<a class="brand{% if site.logo %} has-logo{% endif %}" href="{% url 'home' %}">
+  {% if site.logo %}
+    <img class="brand-logo brand-logo-light" src="{{ site.logo_url }}" alt="{{ site_name }} logo">
+    <img class="brand-logo brand-logo-dark" src="{{ site.logo_dark_url }}" alt="{{ site_name }} logo">
+  {% else %}
+    <span class="brandmark" aria-hidden="true">{{ site.brand_letter }}</span>
+  {% endif %}
+  <span class="brand-text">{{ site_name|truncatechars:28 }}{% if site.tagline %}<small>{{ site.tagline }}</small>{% endif %}</span>
+</a>

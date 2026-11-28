@@ -1,19 +1,47 @@
 {% extends 'base.html' %}
 {% block title %}{{ destination.name }}{% endblock %}
-{% block meta_description %}{{ destination.description|truncatechars:150 }}{% endblock %}
+{% block meta_description %}{{ destination.short_text|truncatechars:150 }}{% endblock %}
 {% block body_attrs %}class="page-destinations"{% endblock %}
 
 {% block content %}
 <section class="dest-hero has-bg"{% if destination.photo_url %} style="background-image:linear-gradient(rgba(10,40,33,.78),rgba(10,40,33,.78)),url('{{ destination.photo_url }}')"{% endif %}><div class="container">
   <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / <a href="{% url 'destinations' %}">Destinations</a> / {{ destination.name }}</div>
-  <span class="dest-eyebrow">{{ destination.location }}</span>
+  <span class="dest-eyebrow">{{ destination.location }}{% if destination.country and destination.country not in destination.location %} · {{ destination.country }}{% endif %}</span>
   <h1>{{ destination.name }}</h1>
+  {% if destination.summary %}<p>{{ destination.summary }}</p>{% endif %}
 </div></section>
 
 <section class="dest-section"><div class="container dest-detail">
   <article class="dest-article">
+    {% if destination.best_time or destination.recommended_duration %}
+    <div class="info-grid">
+      {% if destination.best_time %}<div class="info-card"><span>Best time to visit</span><strong>{{ destination.best_time }}</strong></div>{% endif %}
+      {% if destination.recommended_duration %}<div class="info-card"><span>Recommended visit</span><strong>{{ destination.recommended_duration }}</strong></div>{% endif %}
+      <div class="info-card"><span>Location</span><strong>{{ destination.location }}</strong></div>
+    </div>
+    {% endif %}
+
     <h2>About this place</h2>
     <div class="dest-text">{{ destination.description|linebreaksbr }}</div>
+
+    {% if destination.attraction_list or destination.activity_list %}
+    <div class="incl-grid" style="margin-top:22px">
+      {% if destination.attraction_list %}<div><h2>Attractions</h2><ul class="incl-list yes">{% for item in destination.attraction_list %}<li>{{ item }}</li>{% endfor %}</ul></div>{% endif %}
+      {% if destination.activity_list %}<div><h2>Things to do</h2><ul class="incl-list yes">{% for item in destination.activity_list %}<li>{{ item }}</li>{% endfor %}</ul></div>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if destination.travel_info %}<h2>Getting there</h2><div class="dest-text">{{ destination.travel_info|linebreaksbr }}</div>{% endif %}
+    {% if destination.accommodation_info %}<h2>Where to stay</h2><div class="dest-text">{{ destination.accommodation_info|linebreaksbr }}</div>{% endif %}
+    {% if destination.visitor_info %}<h2>Important visitor information</h2><div class="dest-text notice">{{ destination.visitor_info|linebreaksbr }}</div>{% endif %}
+
+    {% if photos %}
+      <h2>Gallery</h2>
+      <div class="gallery">
+        {% for photo in photos %}<figure><img src="{{ photo.image.url }}" alt="{{ photo.caption|default:destination.name }}" loading="lazy">{% if photo.caption %}<figcaption>{{ photo.caption }}</figcaption>{% endif %}</figure>{% endfor %}
+      </div>
+    {% endif %}
+
     <p class="dest-actions">
       <a class="btn btn-dark" target="_blank" rel="noopener" href="{{ destination.map_url }}">Open in Google Maps ↗</a>
       <a class="btn btn-light" href="{% url 'destinations' %}">← All destinations</a>
@@ -28,4 +56,24 @@
     <p class="dest-map-note">{{ destination.name }} · {{ destination.location }}</p>
   </aside>
 </div></section>
+
+{% if tours %}
+<section class="page-section" id="tours"><div class="container">
+  <h2>Tours to {{ destination.name }}</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Tour</th><th>Duration</th><th>Price</th><th>Next open date</th><th></th></tr></thead>
+    <tbody>
+      {% for tour in tours %}
+        <tr>
+          <td><a class="linkish" href="{{ tour.get_absolute_url }}">{{ tour.title }}</a></td>
+          <td>{{ tour.duration_days }} day{{ tour.duration_days|pluralize }}</td>
+          <td>USD {{ tour.price }} / guest</td>
+          <td>{% if tour.next_slot %}{{ tour.next_slot.date|date:"D j M" }} at {{ tour.next_slot.start_time|time:"H:i" }}{% else %}Ask us{% endif %}</td>
+          <td><a class="btn btn-dark btn-sm" href="{% url 'tour_calendar' tour.slug %}{% if tour.next_slot %}?date={{ tour.next_slot.date|date:'Y-m-d' }}{% endif %}">Book this tour</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div></section>
+{% endif %}
 {% endblock %}

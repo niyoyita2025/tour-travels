@@ -22,7 +22,7 @@ from math import ceil
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
@@ -176,7 +176,7 @@ def _activate_and_sign_in(request, user):
         user.save(update_fields=['is_active'])
         UserProfile.objects.filter(user=user).update(email_verified=True)
     login(request, user)
-    notifications.log_activity(user, 'account.verified', f'Email verified: {user.username}')
+    notifications.account_verified(user)  # welcome email and activity log
     if next_url:
         messages.success(request, f'Welcome, {user.first_name or user.username}! Your account is verified and ready.')
         return redirect(next_url)
@@ -272,6 +272,17 @@ def _throttle_key(request, username):
     return f'login-fail:{request.META.get("REMOTE_ADDR", "")}:{(username or "").strip().lower()}'
 
 
+class NotifyingPasswordChangeView(PasswordChangeView):
+    """Django's password change, plus a security email so the owner knows the password changed."""
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        notifications.log_activity(self.request.user, 'account.password_changed',
+                                   f'Password changed: {self.request.user.username}')
+        notifications.password_changed(self.request.user, how='change')
+        return response
+
+
 class RoleLoginView(ThrottledLoginMixin, LoginView):
     """The single sign-in page. Sends each user to their own dashboard."""
 
@@ -280,8 +291,10 @@ class RoleLoginView(ThrottledLoginMixin, LoginView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Django's LoginView adds site_name = the domain, which would hide the site name set in the dashboard.
+        # Django's LoginView adds `site` (the domain) and `site_name`, which would hide the website's own
+        # settings (name, logo, favicon) that the context processor provides under the same names.
         context.pop('site_name', None)
+        context.pop('site', None)
         return context
 
     def form_invalid(self, form):
@@ -488,6 +501,7 @@ def reset_new_password(request):
                 request.session.pop(key, None)
             notifications.log_activity(user, 'account.password_reset',
                                        f'Password reset with an emailed code: {user.username}')
+            notifications.password_changed(user, how='reset')
             messages.success(request, PASSWORD_CHANGED_MESSAGE)
             return redirect('login')
     else:

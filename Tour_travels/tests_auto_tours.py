@@ -82,7 +82,7 @@ class AutoTourCreationTests(DataMixin, TestCase):
             username='boss', email='boss@example.com', password='Sup3r-Secret-pass-2')
         self.client.force_login(boss)
         self.client.post(reverse('admin:Tour_travels_destination_add'), {
-            'name': 'Nyungwe Forest', 'slug': '', 'location': 'Southern Province', 'description': 'Canopy walk.',
+            'name': 'Nyungwe Forest', 'slug': '', 'location': 'Southern Province', 'country': 'Rwanda', 'description': 'Canopy walk.',
             'map_link': '', 'image_url': '', 'is_featured': '', 'is_active': 'on'})
         destination = Destination.objects.get(name='Nyungwe Forest')
         tour = TourPackage.objects.get(auto_for=destination)

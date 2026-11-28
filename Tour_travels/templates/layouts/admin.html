@@ -1,56 +1,65 @@
 {% extends 'layouts/dashboard_base.html' %}
-{% comment %}Administrator sidebar. Destinations, tours and bookings are three separate management areas.{% endcomment %}
+{% comment %}
+  Administrator sidebar, grouped by area: website, tours, bookings, customers, email and additional content.
+  Every page linked here is administrator-only (staff_required).
+{% endcomment %}
 
 {% block sidebar %}
+  {% with url=request.resolver_match.url_name %}
   <p class="dash-group">Control Panel</p>
-  <a href="{% url 'admin_dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">Overview</a>
+  <a href="{% url 'admin_dashboard' %}" class="{% if url == 'admin_dashboard' %}active{% endif %}">Overview</a>
 
-  <p class="dash-group">Destination Management</p>
-  <a href="{% url 'content_list' 'destinations' %}" class="{% if section == 'destinations' %}active{% endif %}">Destinations</a>
-  <a href="{% url 'content_new' 'destinations' %}" class="{% if request.resolver_match.url_name == 'content_new' and section == 'destinations' %}active{% endif %}">Add a destination</a>
-
-  <p class="dash-group">Tour Management</p>
-  <a href="{% url 'content_list' 'tours' %}" class="{% if section == 'tours' %}active{% endif %}">Tours</a>
-  <a href="{% url 'content_list' 'categories' %}" class="{% if section == 'categories' %}active{% endif %}">Tour categories</a>
-  <a href="{% url 'content_list' 'reviews' %}" class="{% if section == 'reviews' %}active{% endif %}">Reviews &amp; ratings</a>
-
-  <p class="dash-group">Booking Management</p>
-  <a href="{% url 'admin_bookings' %}" class="{% if request.resolver_match.url_name == 'admin_bookings' or request.resolver_match.url_name == 'admin_booking_edit' %}active{% endif %}">Reservations</a>
-  <a href="{% url 'admin_calendar' %}" class="{% if request.resolver_match.url_name == 'admin_calendar' %}active{% endif %}">Booking calendar</a>
-  <a href="{% url 'admin_schedules' %}" class="{% if request.resolver_match.url_name == 'admin_schedules' or request.resolver_match.url_name == 'admin_schedule_edit' or request.resolver_match.url_name == 'admin_schedule_bulk' or request.resolver_match.url_name == 'admin_schedule_new' %}active{% endif %}">Tour dates &amp; capacity</a>
-  <a href="{% url 'admin_scheduling' %}" class="{% if request.resolver_match.url_name == 'admin_scheduling' or request.resolver_match.url_name == 'admin_scheduling_edit' %}active{% endif %}">Automatic timetables</a>
-  <a href="{% url 'admin_payments' %}" class="{% if request.resolver_match.url_name == 'admin_payments' %}active{% endif %}">Payments</a>
-
-  <p class="dash-group">Website pages</p>
-  <a href="{% url 'background_manage' %}" class="{% if request.resolver_match.url_name == 'background_manage' %}active{% endif %}">Background images</a>
-  <a href="{% url 'site_settings' %}" class="{% if request.resolver_match.url_name == 'site_settings' %}active{% endif %}">Home page text</a>
-  <a href="{% url 'about_manage' %}" class="{% if request.resolver_match.url_name == 'about_manage' %}active{% endif %}">About page</a>
+  <p class="dash-group">Website management</p>
+  <a href="{% url 'branding_manage' %}" class="{% if url == 'branding_manage' %}active{% endif %}">Logo, name &amp; favicon</a>
+  <a href="{% url 'site_settings' %}" class="{% if url == 'site_settings' %}active{% endif %}">Home page &amp; footer text</a>
+  <a href="{% url 'background_manage' %}" class="{% if url == 'background_manage' %}active{% endif %}">Hero &amp; background images</a>
+  <a href="{% url 'about_manage' %}" class="{% if url == 'about_manage' %}active{% endif %}">About us, mission &amp; vision</a>
   <a href="{% url 'content_list' 'about_sections' %}" class="{% if section == 'about_sections' %}active{% endif %}">About sections</a>
-  <a href="{% url 'details_manage' %}" class="{% if request.resolver_match.url_name == 'details_manage' %}active{% endif %}">Details page</a>
+  <a href="{% url 'contact_manage' %}" class="{% if url == 'contact_manage' %}active{% endif %}">Contact details</a>
+  <a href="{% url 'content_list' 'contact_details' %}" class="{% if section == 'contact_details' %}active{% endif %}">Other contact details</a>
+
+  <p class="dash-group">Tour management</p>
+  <a href="{% url 'content_list' 'destinations' %}" class="{% if section == 'destinations' %}active{% endif %}">Destinations</a>
+  <a href="{% url 'content_list' 'tours' %}" class="{% if section == 'tours' %}active{% endif %}">Tour packages</a>
+  <a href="{% url 'content_list' 'categories' %}" class="{% if section == 'categories' %}active{% endif %}">Categories</a>
+  <a href="{% url 'content_list' 'destination_photos' %}" class="{% if section == 'destination_photos' %}active{% endif %}">Destination galleries</a>
+  <a href="{% url 'content_list' 'tour_photos' %}" class="{% if section == 'tour_photos' %}active{% endif %}">Tour galleries</a>
+  <a href="{% url 'admin_scheduling' %}" class="{% if url == 'admin_scheduling' or url == 'admin_scheduling_edit' %}active{% endif %}">Timetables: times &amp; group sizes</a>
+
+  <p class="dash-group">Booking management</p>
+  <a href="{% url 'admin_calendar' %}" class="{% if url == 'admin_calendar' %}active{% endif %}">Booking calendar</a>
+  <a href="{% url 'admin_bookings' %}" class="{% if url == 'admin_bookings' or url == 'admin_booking_edit' %}active{% endif %}">Reservations</a>
+  <a href="{% url 'admin_schedules' %}" class="{% if url == 'admin_schedules' or url == 'admin_schedule_edit' or url == 'admin_schedule_bulk' or url == 'admin_schedule_new' %}active{% endif %}">Availability &amp; capacity</a>
+  <a href="{% url 'admin_payments' %}" class="{% if url == 'admin_payments' %}active{% endif %}">Payments</a>
+
+  <p class="dash-group">Customer management</p>
+  <a href="{% url 'admin_customers' %}" class="{% if url == 'admin_customers' or url == 'admin_customer_detail' %}active{% endif %}">Client accounts &amp; history</a>
+  <a href="{% url 'content_list' 'reviews' %}" class="{% if section == 'reviews' %}active{% endif %}">Reviews &amp; feedback</a>
+  <a href="{% url 'admin_inquiries' %}" class="{% if url == 'admin_inquiries' %}active{% endif %}">Contact messages</a>
+  <a href="{% url 'admin_broadcast' %}" class="{% if url == 'admin_broadcast' %}active{% endif %}">Send to all clients</a>
+
+  <p class="dash-group">Email management</p>
+  <a href="{% url 'email_center' %}" class="{% if url == 'email_center' %}active{% endif %}">Gmail status, settings &amp; log</a>
+
+  <p class="dash-group">Additional management</p>
+  <a href="{% url 'content_list' 'faqs' %}" class="{% if section == 'faqs' %}active{% endif %}">FAQ</a>
+  <a href="{% url 'content_list' 'testimonials' %}" class="{% if section == 'testimonials' %}active{% endif %}">Testimonials</a>
+  <a href="{% url 'content_list' 'culture' %}" class="{% if section == 'culture' %}active{% endif %}">Culture cards</a>
+  <a href="{% url 'content_list' 'social' %}" class="{% if section == 'social' %}active{% endif %}">Social media</a>
+  <a href="{% url 'site_settings' %}#id_hosted_by_name">Hosted by</a>
+  <a href="{% url 'content_list' 'cohosts' %}" class="{% if section == 'cohosts' %}active{% endif %}">Co-hosts</a>
+  <a href="{% url 'policies_manage' %}" class="{% if url == 'policies_manage' %}active{% endif %}">Terms, privacy &amp; booking policy</a>
+  <a href="{% url 'details_manage' %}" class="{% if url == 'details_manage' %}active{% endif %}">Details page</a>
   <a href="{% url 'content_list' 'detail_photos' %}" class="{% if section == 'detail_photos' %}active{% endif %}">Details: gallery</a>
   <a href="{% url 'content_list' 'detail_books' %}" class="{% if section == 'detail_books' %}active{% endif %}">Details: books</a>
   <a href="{% url 'content_list' 'detail_links' %}" class="{% if section == 'detail_links' %}active{% endif %}">Details: links</a>
   <a href="{% url 'content_list' 'detail_sections' %}" class="{% if section == 'detail_sections' %}active{% endif %}">Details: sections</a>
-  <a href="{% url 'content_list' 'faqs' %}" class="{% if section == 'faqs' %}active{% endif %}">FAQs</a>
-  <a href="{% url 'content_list' 'culture' %}" class="{% if section == 'culture' %}active{% endif %}">Culture cards</a>
 
-  <p class="dash-group">Contact &amp; footer</p>
-  <a href="{% url 'contact_manage' %}" class="{% if request.resolver_match.url_name == 'contact_manage' %}active{% endif %}">Contact details</a>
-  <a href="{% url 'content_list' 'contact_details' %}" class="{% if section == 'contact_details' %}active{% endif %}">Other contact details</a>
-  <a href="{% url 'content_list' 'social' %}" class="{% if section == 'social' %}active{% endif %}">Social media</a>
-  <a href="{% url 'content_list' 'cohosts' %}" class="{% if section == 'cohosts' %}active{% endif %}">Co-hosts</a>
-
-  <p class="dash-group">Messages</p>
-  <a href="{% url 'admin_inquiries' %}" class="{% if request.resolver_match.url_name == 'admin_inquiries' %}active{% endif %}">Contact messages</a>
-  <a href="{% url 'notifications' %}" class="{% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">Notifications {% if unread_count %}<span class="badge">{{ unread_count }}</span>{% endif %}</a>
-  <a href="{% url 'admin_broadcast' %}" class="{% if request.resolver_match.url_name == 'admin_broadcast' %}active{% endif %}">Send to all clients</a>
-
-  <p class="dash-group">Customers &amp; staff</p>
-  <a href="{% url 'admin_customers' %}" class="{% if request.resolver_match.url_name == 'admin_customers' or request.resolver_match.url_name == 'admin_customer_detail' %}active{% endif %}">Customer accounts</a>
-  <a href="{% url 'admin_create' %}" class="{% if request.resolver_match.url_name == 'admin_create' %}active{% endif %}">Create administrator</a>
-
-  <p class="dash-group">Activity &amp; account</p>
-  <a href="{% url 'admin_activity' %}" class="{% if request.resolver_match.url_name == 'admin_activity' %}active{% endif %}">System activity</a>
-  <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}">My profile</a>
-  <a href="{% url 'password_change' %}" class="{% if request.resolver_match.url_name == 'password_change' %}active{% endif %}">Change password</a>
+  <p class="dash-group">Staff &amp; account</p>
+  <a href="{% url 'admin_create' %}" class="{% if url == 'admin_create' %}active{% endif %}">Create administrator</a>
+  <a href="{% url 'admin_activity' %}" class="{% if url == 'admin_activity' %}active{% endif %}">System activity</a>
+  <a href="{% url 'notifications' %}" class="{% if url == 'notifications' %}active{% endif %}">Notifications {% if unread_count %}<span class="badge">{{ unread_count }}</span>{% endif %}</a>
+  <a href="{% url 'profile' %}" class="{% if url == 'profile' %}active{% endif %}">My profile</a>
+  <a href="{% url 'password_change' %}" class="{% if url == 'password_change' %}active{% endif %}">Change password</a>
+  {% endwith %}
 {% endblock %}

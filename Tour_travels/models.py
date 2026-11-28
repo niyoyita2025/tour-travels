@@ -30,6 +30,16 @@ def validate_image_size(file):
 
 IMAGE_VALIDATORS = [FileExtensionValidator(['jpg', 'jpeg', 'png', 'webp']), validate_image_size]
 
+MAX_FAVICON_BYTES = 512 * 1024
+
+
+def validate_favicon_size(file):
+    if file.size > MAX_FAVICON_BYTES:
+        raise ValidationError('The favicon must be 512 KB or smaller.')
+
+
+FAVICON_VALIDATORS = [FileExtensionValidator(['png', 'ico', 'webp', 'jpg', 'jpeg']), validate_favicon_size]
+
 
 def unique_slug(instance, value):
     """Return a slug for `value` that is unique for the instance's model."""
@@ -64,7 +74,19 @@ class Destination(models.Model):
     name = models.CharField(max_length=120)
     slug = models.SlugField(max_length=140, unique=True, blank=True)
     location = models.CharField(max_length=120, default='Kigali, Rwanda')
-    description = models.TextField()
+    country = models.CharField(max_length=80, default='Rwanda')
+    summary = models.CharField('short description', max_length=220, blank=True,
+                               help_text='One or two sentences for cards. Leave blank to use the start of the full description.')
+    description = models.TextField('full description')
+    attractions = models.TextField(blank=True, help_text='One attraction per line.')
+    activities = models.TextField(blank=True, help_text='One activity per line.')
+    travel_info = models.TextField('getting there', blank=True, help_text='Transport, distance and access.')
+    accommodation_info = models.TextField('accommodation', blank=True, help_text='Where to stay nearby, if relevant.')
+    best_time = models.CharField('best time to visit', max_length=160, blank=True)
+    recommended_duration = models.CharField('recommended visit length', max_length=80, blank=True,
+                                            help_text='For example "2 to 3 hours" or "Half a day".')
+    visitor_info = models.TextField('important visitor information', blank=True,
+                                    help_text='Opening hours, dress code, fees, photography rules and similar.')
     map_link = models.URLField(
         'map link (optional)', blank=True,
         help_text='A Google Maps link for this place. Leave blank to use an automatic map search.')
@@ -104,6 +126,38 @@ class Destination(models.Model):
         return 'https://maps.google.com/maps?' + urlencode({
             'q': f'{self.name} {self.location}', 't': '', 'z': 13, 'ie': 'UTF8', 'output': 'embed'})
 
+    @property
+    def short_text(self):
+        return self.summary or self.description
+
+    @property
+    def attraction_list(self):
+        return _lines(self.attractions)
+
+    @property
+    def activity_list(self):
+        return _lines(self.activities)
+
+
+def _lines(text):
+    return [line.strip() for line in (text or '').splitlines() if line.strip()]
+
+
+class DestinationPhoto(models.Model):
+    """Extra photographs for a destination's gallery. The main photo stays on the destination itself."""
+    destination = models.ForeignKey(Destination, on_delete=models.CASCADE, related_name='photos')
+    image = models.ImageField(upload_to='destinations/gallery/', validators=IMAGE_VALIDATORS)
+    caption = models.CharField(max_length=200, blank=True)
+    order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField('shown', default=True)
+
+    class Meta:
+        ordering = ['destination__name', 'order', 'id']
+        verbose_name = 'destination photo'
+
+    def __str__(self):
+        return f'{self.destination}: {self.caption or "photo"}'
+
 
 class TourPackage(models.Model):
     title = models.CharField(max_length=150)
@@ -118,6 +172,14 @@ class TourPackage(models.Model):
     summary = models.CharField(max_length=200)
     description = models.TextField()
     highlights = models.TextField(blank=True, help_text='One highlight per line.')
+    itinerary = models.TextField(blank=True, help_text='One step per line, for example "09:00 Meet at the hotel".')
+    start_location = models.CharField('starting point', max_length=160, blank=True)
+    end_location = models.CharField('ending point', max_length=160, blank=True)
+    included = models.TextField("what's included", blank=True, help_text='One item per line.')
+    excluded = models.TextField('not included', blank=True, help_text='One item per line.')
+    cancellation_policy = models.TextField(blank=True, help_text='Leave blank to use the general booking policy.')
+    travel_instructions = models.TextField('important travel instructions', blank=True,
+                                           help_text='What to bring, what to wear, meeting details.')
     price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0'))],
                                 help_text='Price per guest, in USD.')
     duration_days = models.PositiveSmallIntegerField(default=1, validators=[MinValueValidator(1)])
@@ -151,7 +213,19 @@ class TourPackage(models.Model):
 
     @property
     def highlight_list(self):
-        return [line.strip() for line in self.highlights.splitlines() if line.strip()]
+        return _lines(self.highlights)
+
+    @property
+    def itinerary_list(self):
+        return _lines(self.itinerary)
+
+    @property
+    def included_list(self):
+        return _lines(self.included)
+
+    @property
+    def excluded_list(self):
+        return _lines(self.excluded)
 
     @property
     def average_rating(self):
@@ -161,6 +235,22 @@ class TourPackage(models.Model):
     @property
     def review_count(self):
         return self.reviews.filter(is_published=True).count()
+
+
+class TourPhoto(models.Model):
+    """Extra photographs for a tour's gallery. The main photo stays on the tour itself."""
+    package = models.ForeignKey(TourPackage, on_delete=models.CASCADE, related_name='photos', verbose_name='tour')
+    image = models.ImageField(upload_to='packages/gallery/', validators=IMAGE_VALIDATORS)
+    caption = models.CharField(max_length=200, blank=True)
+    order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField('shown', default=True)
+
+    class Meta:
+        ordering = ['package__title', 'order', 'id']
+        verbose_name = 'tour photo'
+
+    def __str__(self):
+        return f'{self.package}: {self.caption or "photo"}'
 
 
 def generate_reference():
@@ -317,6 +407,8 @@ class Booking(models.Model):
     expires_at = models.DateTimeField(
         null=True, blank=True,
         help_text='A pending request not confirmed by this time is released so the seats can be sold again.')
+    reminder_sent_at = models.DateTimeField(null=True, blank=True, editable=False,
+                                            help_text='When the reminder email for this booking was sent.')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -490,6 +582,39 @@ class SiteSettings(models.Model):
     There is exactly one row (pk=1); use SiteSettings.load() to read it.
     """
     site_name = models.CharField('site name', max_length=100, default='Explore Rwanda with a Local Guide')
+    # Branding: shown in the header, dashboards, browser tab and emails.
+    tagline = models.CharField(max_length=80, default='with a local guide', blank=True,
+                               help_text='Short line under the name in the header.')
+    site_description = models.TextField(
+        'website description', max_length=300, blank=True,
+        default='Discover Kigali and experience Rwanda with a friendly local guide. Explore culture, history, '
+                'markets and beautiful city views.',
+        help_text='Used by search engines and link previews.')
+    logo = models.ImageField(upload_to='site/', blank=True, validators=IMAGE_VALIDATORS,
+                             help_text='JPG, PNG or WebP, up to 5 MB. Leave blank to show the letter mark.')
+    logo_dark = models.ImageField('logo for dark backgrounds', upload_to='site/', blank=True,
+                                  validators=IMAGE_VALIDATORS,
+                                  help_text='Optional. Used in dark mode, the dashboards and the footer.')
+    favicon = models.ImageField('browser icon (favicon)', upload_to='site/', blank=True,
+                                validators=FAVICON_VALIDATORS,
+                                help_text='Square PNG or ICO, ideally 64 x 64 pixels, up to 512 KB.')
+    mission = models.TextField('our mission', blank=True)
+    vision = models.TextField('our vision', blank=True)
+    # Policies: each has its own public page, linked from the footer.
+    terms_text = models.TextField('terms and conditions', blank=True)
+    privacy_text = models.TextField('privacy policy', blank=True)
+    booking_policy_text = models.TextField(
+        'booking and cancellation policy', blank=True,
+        default='Your booking is a request until we confirm it. Pending requests hold your seats for a short time. '
+                'You can cancel a booking from your account up to the notice period shown on your booking. '
+                'Payment is arranged directly with us.')
+    # Email notification settings
+    email_staff_on_booking = models.BooleanField(
+        'email staff about new bookings, cancellations and messages', default=True)
+    send_booking_reminders = models.BooleanField('send booking reminders', default=True)
+    reminder_hours_before = models.PositiveSmallIntegerField(
+        'send reminders this many hours before', default=24,
+        validators=[MinValueValidator(1), MaxValueValidator(168)])
     footer_tagline = models.TextField(
         default="Local guided experiences that help international visitors discover Kigali's history, culture and everyday life.")
 
@@ -551,6 +676,61 @@ class SiteSettings(models.Model):
     def load(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    @property
+    def logo_url(self):
+        return self.logo.url if self.logo else ''
+
+    @property
+    def logo_dark_url(self):
+        return self.logo_dark.url if self.logo_dark else self.logo_url
+
+    @property
+    def favicon_url(self):
+        return self.favicon.url if self.favicon else ''
+
+    @property
+    def brand_letter(self):
+        return (self.site_name.strip()[:1] or 'R').upper()
+
+
+class Testimonial(models.Model):
+    """A short quote from a past guest, shown on the home page. Separate from tour reviews."""
+    name = models.CharField(max_length=120)
+    origin = models.CharField('from', max_length=120, blank=True, help_text='For example "Toronto, Canada".')
+    quote = models.TextField(max_length=600)
+    rating = models.PositiveSmallIntegerField(default=5, validators=[MinValueValidator(1), MaxValueValidator(5)])
+    photo = models.ImageField(upload_to='testimonials/', blank=True, validators=IMAGE_VALIDATORS)
+    order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField('published', default=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f'{self.name}: {self.quote[:40]}'
+
+
+class EmailLog(models.Model):
+    """One row per email the website tried to send. Never stores codes, passwords or message bodies."""
+
+    class Status(models.TextChoices):
+        SENT = 'sent', 'Accepted by Gmail'
+        FAILED = 'failed', 'Failed'
+
+    kind = models.CharField(max_length=40, db_index=True)
+    recipient = models.EmailField()
+    subject = models.CharField(max_length=200)
+    status = models.CharField(max_length=10, choices=Status.choices)
+    error = models.CharField(max_length=300, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.kind} to {self.recipient}: {self.status}'
+
 
 class CultureItem(models.Model):
     icon = models.CharField(max_length=10, default='🌿', help_text='An emoji shown on the card.')

@@ -12,7 +12,13 @@
     <span class="kicker">Who we are</span>
     <h2>{{ site.about_title }}</h2>
   </div>
-  <p class="about-lead">{{ site.about_text }}</p>
+  <p class="about-lead">{{ site.about_text|linebreaksbr }}</p>
+  {% if site.mission or site.vision %}
+  <div class="info-grid" style="margin-top:22px">
+    {% if site.mission %}<div class="info-card"><span>Our mission</span><p style="margin:6px 0 0">{{ site.mission|linebreaksbr }}</p></div>{% endif %}
+    {% if site.vision %}<div class="info-card"><span>Our vision</span><p style="margin:6px 0 0">{{ site.vision|linebreaksbr }}</p></div>{% endif %}
+  </div>
+  {% endif %}
   <p style="margin-top:24px"><a class="btn btn-dark" href="{% url 'packages' %}">See our tours →</a></p>
 </div></section>
 

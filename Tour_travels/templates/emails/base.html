@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ m.subject }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f3f6f4;font-family:Arial,Helvetica,sans-serif;color:#1f2d27;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f6f4;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;">
+          {# Header: logo (or letter mark) and website name #}
+          <tr>
+            <td style="background:#123d32;padding:18px 24px;">
+              <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+                <td style="padding-right:12px;vertical-align:middle;">
+                  {% if logo_url %}
+                    <img src="{{ logo_url }}" alt="{{ site_name }}" height="40" style="display:block;height:40px;max-width:160px;border:0;">
+                  {% else %}
+                    <div style="width:40px;height:40px;border-radius:10px;background:#e9b949;color:#123d32;font-size:22px;font-weight:700;line-height:40px;text-align:center;">{{ site.brand_letter }}</div>
+                  {% endif %}
+                </td>
+                <td style="vertical-align:middle;color:#ffffff;font-size:17px;font-weight:700;">{{ site_name }}</td>
+              </tr></table>
+            </td>
+          </tr>
+          {# Title band: each kind of email sets its own colour and label #}
+          <tr>
+            <td style="padding:22px 24px 6px;border-top:4px solid {% block accent %}#1e5948{% endblock %};">
+              <p style="margin:0 0 6px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#6b7a71;">{% block label %}Notification{% endblock %}</p>
+              <h1 style="margin:0;font-size:22px;line-height:1.3;color:#123d32;">{{ m.title }}</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 24px 4px;">
+              {% for paragraph in m.paragraphs %}
+                <p style="margin:0 0 14px;font-size:16px;line-height:1.55;">{{ paragraph }}</p>
+              {% endfor %}
+            </td>
+          </tr>
+          {% block body %}{% endblock %}
+          {% if m.details %}
+          <tr>
+            <td style="padding:6px 24px 10px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dfe6e1;border-radius:10px;">
+                {% for label, value in m.details %}
+                <tr>
+                  <td style="padding:10px 14px;font-size:14px;color:#6b7a71;width:40%;{% if not forloop.last %}border-bottom:1px solid #eef2ef;{% endif %}">{{ label }}</td>
+                  <td style="padding:10px 14px;font-size:14px;font-weight:700;color:#1f2d27;{% if not forloop.last %}border-bottom:1px solid #eef2ef;{% endif %}">{{ value }}</td>
+                </tr>
+                {% endfor %}
+              </table>
+            </td>
+          </tr>
+          {% endif %}
+          {% if m.button_url %}
+          <tr>
+            <td align="center" style="padding:14px 24px 6px;">
+              <a href="{{ m.button_url }}" style="display:inline-block;padding:12px 24px;border-radius:10px;background:#1e5948;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;">{{ m.button_text|default:"Open" }}</a>
+              <p style="margin:10px 0 0;font-size:12px;line-height:1.5;color:#6b7a71;word-break:break-all;">Or copy this address: {{ m.button_url }}</p>
+            </td>
+          </tr>
+          {% endif %}
+          <tr>
+            <td style="padding:14px 24px 22px;">
+              {% if m.closing %}<p style="margin:0 0 12px;font-size:14px;line-height:1.5;color:#44544b;">{{ m.closing }}</p>{% endif %}
+              <p style="margin:0;font-size:14px;line-height:1.5;color:#44544b;">Thank you.<br>{{ site_name }}</p>
+            </td>
+          </tr>
+          {# Footer: contact details #}
+          <tr>
+            <td style="background:#f6f8f6;padding:16px 24px;border-top:1px solid #e3e9e5;font-size:12px;line-height:1.6;color:#6b7a71;">
+              <strong style="color:#123d32;">{{ site_name }}</strong><br>
+              {% if contact_email %}Email: <a href="mailto:{{ contact_email }}" style="color:#1e5948;">{{ contact_email }}</a><br>{% endif %}
+              {% if contact_phone %}Phone: {{ contact_phone }}<br>{% endif %}
+              {% if contact_address %}{{ contact_address }}<br>{% endif %}
+              <a href="{{ site_url }}" style="color:#1e5948;">{{ site_url }}</a><br>
+              You received this email because of activity on your account or booking.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

@@ -15,7 +15,8 @@
 
     <div class="facts">
       <div class="fact"><span>Duration</span><strong>{{ package.duration_days }} day{{ package.duration_days|pluralize }}</strong></div>
-      <div class="fact"><span>Group size</span><strong>Up to {{ package.max_guests }} guests</strong></div>
+      <div class="fact"><span>Group size</span><strong>{% if package.min_guests > 1 %}{{ package.min_guests }} to {{ package.max_guests }}{% else %}Up to {{ package.max_guests }}{% endif %} guests</strong></div>
+      {% if rule %}<div class="fact"><span>Start times</span><strong>{{ rule.default_start|time:"H:i" }}–{{ rule.last_start|time:"H:i" }}, every {{ rule.interval_hours }} h</strong></div>{% endif %}
       <div class="fact"><span>Category</span><strong>{{ package.category.name|default:"Tour" }}</strong></div>
       <div class="fact"><span>Rating</span><strong>{% if package.average_rating %}★ {{ package.average_rating }} ({{ package.review_count }}){% else %}No reviews yet{% endif %}</strong></div>
     </div>
@@ -35,6 +36,46 @@
           {% endfor %}
         </ul>
       {% endif %}{% endwith %}
+
+      {% if package.start_location or package.end_location %}
+        <div class="info-grid">
+          {% if package.start_location %}<div class="info-card"><span>Starting point</span><strong>{{ package.start_location }}</strong></div>{% endif %}
+          {% if package.end_location %}<div class="info-card"><span>Ending point</span><strong>{{ package.end_location }}</strong></div>{% endif %}
+        </div>
+      {% endif %}
+
+      {% if package.itinerary_list %}
+        <h2>Itinerary</h2>
+        <ol class="itinerary">{% for step in package.itinerary_list %}<li>{{ step }}</li>{% endfor %}</ol>
+      {% endif %}
+
+      {% if package.included_list or package.excluded_list %}
+        <div class="incl-grid">
+          {% if package.included_list %}<div><h2>What's included</h2><ul class="incl-list yes">{% for item in package.included_list %}<li>{{ item }}</li>{% endfor %}</ul></div>{% endif %}
+          {% if package.excluded_list %}<div><h2>Not included</h2><ul class="incl-list no">{% for item in package.excluded_list %}<li>{{ item }}</li>{% endfor %}</ul></div>{% endif %}
+        </div>
+      {% endif %}
+
+      {% if package.travel_instructions %}
+        <h2>Important travel instructions</h2>
+        <p class="notice">{{ package.travel_instructions|linebreaksbr }}</p>
+      {% endif %}
+
+      <h2>Cancellation policy</h2>
+      {% if package.cancellation_policy %}
+        <p>{{ package.cancellation_policy|linebreaksbr }}</p>
+      {% elif site.booking_policy_text %}
+        <p>{{ site.booking_policy_text|linebreaksbr|truncatewords_html:60 }} <a class="linkish" href="{% url 'policy' 'booking-policy' %}">Read the full policy</a></p>
+      {% else %}
+        <p>You can cancel from your account up to {{ cancel_hours }} hours before the tour.</p>
+      {% endif %}
+
+      {% if photos %}
+        <h2>Gallery</h2>
+        <div class="gallery">
+          {% for photo in photos %}<figure><img src="{{ photo.image.url }}" alt="{{ photo.caption|default:package.title }}" loading="lazy">{% if photo.caption %}<figcaption>{{ photo.caption }}</figcaption>{% endif %}</figure>{% endfor %}
+        </div>
+      {% endif %}
     </div>
 
     <div class="detail-body" id="dates">

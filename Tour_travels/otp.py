@@ -24,7 +24,6 @@ from django.core.cache import cache
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import F
-from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare, salted_hmac
 
@@ -116,20 +115,26 @@ def timers(user, purpose):
 
 _EMAIL_TEXT = {
     SIGNUP: {
+        'kind': 'signup_code',
         'subject': 'Your Account Verification Code',
+        'title': 'Verify your email address',
         'intro': 'Thank you for registering on our website.',
         'label': 'Your six-digit verification code is:',
         'closing': 'If you did not register, you can ignore this email.',
     },
     RESET: {
+        'kind': 'reset_code',
         'subject': 'Your Password Reset Code',
+        'title': 'Reset your password',
         'intro': 'We received a request to reset the password for your account.',
         'label': 'Your six-digit password reset code is:',
         'closing': 'If you did not ask for this, you can ignore this email and your password will stay the same.',
     },
     EMAIL_CHANGE: {
+        'kind': 'email_change_code',
         'subject': 'Confirm your new email address',
-        'intro': 'You asked to use this address for your Explore Rwanda account.',
+        'title': 'Confirm your new email address',
+        'intro': 'You asked to use this address for your {site_name} account.',
         'label': 'Your six-digit confirmation code is:',
         'closing': 'If you did not ask for this change, you can ignore this email. Your account keeps its current address.',
     },
@@ -138,27 +143,38 @@ _EMAIL_TEXT = {
 
 # A reset an administrator starts for a customer from the staff dashboard.
 _STAFF_RESET_TEXT = {
+    'kind': 'staff_reset_code',
     'subject': 'Your Password Reset Code',
-    'intro': 'An Explore Rwanda administrator started a password reset for your account.',
+    'title': 'Reset your password',
+    'intro': 'A {site_name} administrator started a password reset for your account.',
     'label': 'Your six-digit password reset code is:',
     'closing': 'If you did not expect this, you can ignore this email and your password will stay the same.',
 }
 
 
-def _send_code_email(purpose, code, to_address, lifetime_seconds, link_url='', staff_reset=False):
+def _code_message(purpose, code, to_address, lifetime_seconds, link_url='', staff_reset=False):
+    from .emails import Message
+    from .models import SiteSettings
+
     text = _STAFF_RESET_TEXT if staff_reset else _EMAIL_TEXT[purpose]
-    context = {
-        'intro': text['intro'],
-        'label': text['label'],
-        'closing': text['closing'],
-        'code': code,
-        'minutes': lifetime_seconds // 60,
-        'link_url': link_url,
-    }
-    body = render_to_string('accounts/otp_email.txt', context)
-    html = render_to_string('accounts/otp_email.html', context)
-    send_mail(text['subject'], body, settings.DEFAULT_FROM_EMAIL, [to_address], fail_silently=False,
-              html_message=html)
+    paragraphs = [text['intro'].format(site_name=SiteSettings.load().site_name), text['label']]
+    message = Message(kind=text['kind'], to=to_address, subject=text['subject'], title=text['title'],
+                      paragraphs=paragraphs, code=code, code_minutes=lifetime_seconds // 60,
+                      closing=text['closing'])
+    if link_url:
+        message.button_url = link_url
+        message.button_text = 'Enter my code'
+        message.paragraphs.append('After the code, open the page below, enter your email address and then the '
+                                  'code, and choose a new password.')
+    return message
+
+
+def _send_code_email(message):
+    """Send through send_mail, so the outcome is known before the code is kept or withdrawn."""
+    from .emails import render
+
+    subject, body, html = render(message)
+    send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [message.to], fail_silently=False, html_message=html)
 
 
 def describe_email_error(error):
@@ -214,14 +230,22 @@ def issue_code(user, purpose, to_email='', lifetime_seconds=None, link_url='', s
         created_at=now,
         expires_at=now + timedelta(seconds=lifetime),
     )
+    from .models import EmailLog
+
+    message = _code_message(purpose, code, to_email or user.email, lifetime, link_url=link_url,
+                            staff_reset=staff_reset)
     try:
-        _send_code_email(purpose, code, to_email or user.email, lifetime, link_url=link_url,
-                         staff_reset=staff_reset)
+        _send_code_email(message)
     except Exception as error:  # noqa: BLE001 - any SMTP, network or configuration error is a delivery failure
         otp.delete()
         # The reason names the setting to fix. It never includes the code, the message body or the password.
-        logger.error('Could not send a %s code to user %s: %s', purpose, user.pk, describe_email_error(error))
+        reason = describe_email_error(error)
+        logger.error('Could not send a %s code to user %s: %s', purpose, user.pk, reason)
+        EmailLog.objects.create(kind=message.kind, recipient=message.to, subject=message.subject,
+                                status=EmailLog.Status.FAILED, error=reason[:300])
         raise DeliveryFailed from None
+    EmailLog.objects.create(kind=message.kind, recipient=message.to, subject=message.subject,
+                            status=EmailLog.Status.SENT)
 
     _count_send(user, purpose)
     EmailOTP.objects.filter(user=user, purpose=purpose, used_at__isnull=True).exclude(pk=otp.pk).update(used_at=now)

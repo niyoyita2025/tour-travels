@@ -15,7 +15,7 @@ from .models import (
     FAQ, Booking, Category, CultureItem, Destination, Inquiry, Payment, Review, SiteSettings,
     ScheduleRule, TourPackage, TourSchedule, UserProfile, CoHost,
     AboutSection, BackgroundImage, ContactDetail, DetailBook, DetailLink, DetailPhoto, DetailSection,
-    DetailsPage, SocialLink,
+    DetailsPage, SocialLink, DestinationPhoto, TourPhoto, Testimonial,
 )
 from .models import BIO_MAX_LENGTH, MAX_BOOKING_HOURS
 from .models import MAX_IMAGE_BYTES as MAX_LOGO_BYTES
@@ -361,9 +361,63 @@ class BookingStatusForm(StyledFormMixin, forms.ModelForm):
 # ---------- staff content management: every publishable field ----------
 
 class DestinationForm(StyledFormMixin, forms.ModelForm):
+    country = forms.CharField(max_length=80, required=False, initial='Rwanda',
+                              help_text='Leave blank for Rwanda.')
+
+    def clean_country(self):
+        return (self.cleaned_data.get('country') or '').strip() or 'Rwanda'
+
     class Meta:
         model = Destination
-        fields = ['name', 'slug', 'location', 'description', 'map_link', 'image', 'image_url', 'is_featured', 'is_active']
+        fields = ['name', 'slug', 'location', 'country', 'summary', 'description', 'attractions', 'activities',
+                  'best_time', 'recommended_duration', 'travel_info', 'accommodation_info', 'visitor_info',
+                  'map_link', 'image', 'image_url', 'is_featured', 'is_active']
+        labels = {'is_active': 'Published (shown on the website)'}
+        widgets = {name: forms.Textarea(attrs={'rows': 4}) for name in
+                   ('attractions', 'activities', 'travel_info', 'accommodation_info', 'visitor_info')}
+
+
+class DestinationPhotoForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = DestinationPhoto
+        fields = ['destination', 'image', 'caption', 'order', 'is_active']
+
+
+class TourPhotoForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = TourPhoto
+        fields = ['package', 'image', 'caption', 'order', 'is_active']
+
+
+class TestimonialForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = Testimonial
+        fields = ['name', 'origin', 'quote', 'rating', 'photo', 'order', 'is_active']
+
+
+class BrandingForm(StyledFormMixin, forms.ModelForm):
+    """Website name, logo, favicon, tagline and description. Shown everywhere through the shared context."""
+
+    class Meta:
+        model = SiteSettings
+        fields = ['site_name', 'tagline', 'site_description', 'logo', 'logo_dark', 'favicon']
+
+
+class PoliciesForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = SiteSettings
+        fields = ['terms_text', 'privacy_text', 'booking_policy_text']
+        help_texts = {name: 'Paragraphs are separated by a blank line. Leave blank to hide the page.'
+                      for name in ('terms_text', 'privacy_text', 'booking_policy_text')}
+        widgets = {name: forms.Textarea(attrs={'rows': 12})
+                   for name in ('terms_text', 'privacy_text', 'booking_policy_text')}
+
+
+class NotificationSettingsForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = SiteSettings
+        fields = ['staff_notification_email', 'email_staff_on_booking', 'send_booking_reminders',
+                  'reminder_hours_before']
 
 
 class TourPackageForm(StyledFormMixin, forms.ModelForm):
@@ -374,9 +428,12 @@ class TourPackageForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = TourPackage
         fields = ['title', 'slug', 'category', 'destinations', 'summary', 'description', 'highlights',
-                  'price', 'duration_days', 'min_guests', 'max_guests', 'image', 'image_url', 'is_featured',
-                  'is_active']
-        widgets = {'highlights': forms.Textarea(attrs={'rows': 5})}
+                  'itinerary', 'start_location', 'end_location', 'included', 'excluded',
+                  'price', 'duration_days', 'min_guests', 'max_guests', 'cancellation_policy',
+                  'travel_instructions', 'image', 'image_url', 'is_featured', 'is_active']
+        labels = {'is_active': 'Published (shown on the website)'}
+        widgets = {name: forms.Textarea(attrs={'rows': 5}) for name in
+                   ('highlights', 'itinerary', 'included', 'excluded', 'cancellation_policy', 'travel_instructions')}
 
     def clean_min_guests(self):
         return self.cleaned_data.get('min_guests') or 1
@@ -417,13 +474,14 @@ class SiteSettingsForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = SiteSettings
         # Home page and site text. Contact details, About text and social links have their own forms.
+        # The website name is on the Branding form; the staff email is on the Email settings form.
         fields = [
-            'site_name', 'footer_tagline',
+            'footer_tagline',
             'hero_eyebrow', 'hero_title', 'hero_text',
             'intro_kicker', 'intro_title', 'intro_text',
             'culture_intro', 'history_note',
             'booking_notice', 'final_cta_title', 'final_cta_text',
-            'payment_instructions', 'staff_notification_email',
+            'payment_instructions',
             'hosted_by_name', 'hosted_by_logo', 'hosted_by_url',
         ]
 
@@ -632,7 +690,7 @@ class ContactSettingsForm(StyledFormMixin, forms.ModelForm):
 class AboutTextForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = SiteSettings
-        fields = ['about_title', 'about_text']
+        fields = ['about_title', 'about_text', 'mission', 'vision']
 
 
 class DetailsPageForm(StyledFormMixin, forms.ModelForm):

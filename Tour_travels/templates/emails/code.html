@@ -1,0 +1,11 @@
+{% extends 'emails/base.html' %}
+{% block accent %}#1e5948{% endblock %}
+{% block label %}Security code{% endblock %}
+{% block body %}
+<tr>
+  <td align="center" style="padding:4px 24px 8px;">
+    <div style="display:inline-block;padding:14px 22px;border-radius:12px;background:#f3f8f5;border:1px solid #cfd6d0;font-family:'Courier New',Courier,monospace;font-size:30px;font-weight:700;letter-spacing:8px;color:#1e5948;">{{ m.code }}</div>
+    {% if m.code_minutes %}<p style="margin:10px 0 0;font-size:14px;line-height:1.5;color:#44544b;">This code expires after {{ m.code_minutes }} minutes. Do not share it with anyone.</p>{% endif %}
+  </td>
+</tr>
+{% endblock %}

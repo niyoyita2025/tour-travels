@@ -52,8 +52,16 @@ def admin_schedule_form(request, pk=None):
         if form.is_valid():
             item = form.save()
             if old and old != (item.date, item.start_time):
-                # Keep every booking's travel date in step with its slot.
+                # Keep every booking's travel date in step with its slot, and tell each customer.
                 Booking.objects.filter(schedule=item).update(travel_date=item.date)
+                was = f'{old[0]:%d %b %Y} at {old[1]:%H:%M}'
+                affected = Booking.objects.filter(
+                    schedule=item, status__in=[Booking.Status.PENDING, Booking.Status.CONFIRMED],
+                ).select_related('package', 'schedule')
+                for booking in affected:
+                    notifications.schedule_changed(booking, was, actor=request.user)
+                if affected:
+                    messages.info(request, f'{len(affected)} customer(s) on this time were emailed about the change.')
             verb = 'Updated' if schedule else 'Added'
             notifications.log_activity(request.user, 'schedule.saved',
                                        f'{verb} tour date: {item} (capacity {item.capacity})')

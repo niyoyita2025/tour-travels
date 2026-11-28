@@ -35,10 +35,11 @@ class DestinationsSectionTests(DataMixin, TestCase):
         self.assertContains(response, '>Details</a>')
         self.assertContains(response, self.destination.get_absolute_url())
 
-    def test_destinations_page_has_no_tour_booking_or_categories(self):
+    def test_destinations_page_has_no_tour_cards_or_categories(self):
+        # The header's "Book Now" link is on every page; the destinations list itself shows places only.
         response = self.client.get(reverse('destinations'))
-        for text in ['Book now', 'Book Now', 'seats left', 'No open dates', 'cat-chip', 'slot-chip',
-                     'Book a tour', self.category.name]:
+        for text in ['seats left', 'No open dates', 'cat-chip', 'slot-chip', 'Book this tour',
+                     self.category.name, self.package.title]:
             with self.subTest(text=text):
                 self.assertNotContains(response, text)
 
@@ -48,12 +49,23 @@ class DestinationsSectionTests(DataMixin, TestCase):
         self.assertContains(response, 'maps.google.com/maps?')
         self.assertContains(response, 'Open in Google Maps')
 
-    def test_destination_page_does_not_list_tours_or_booking(self):
+    def test_destination_page_lists_its_published_tours_with_prices_and_booking_links(self):
+        self.package.destinations.add(self.destination)
+        hidden = TourPackage.objects.create(title='Hidden Tour', summary='s', description='d', price=5,
+                                            is_active=False)
+        hidden.destinations.add(self.destination)
         response = self.client.get(self.destination.get_absolute_url())
-        self.assertNotContains(response, self.package.title)
+        self.assertContains(response, f'Tours to {self.destination.name}')
+        self.assertContains(response, self.package.title)
+        self.assertContains(response, f'USD {self.package.price} / guest')
+        self.assertContains(response, reverse('tour_calendar', args=[self.package.slug]))
+        self.assertContains(response, 'Book this tour')
+        self.assertNotContains(response, 'Hidden Tour')
+
+    def test_destination_page_without_tours_has_no_tour_section(self):
+        self.destination.packages.clear()
+        response = self.client.get(self.destination.get_absolute_url())
         self.assertNotContains(response, 'Book this tour')
-        self.assertNotContains(response, 'Book now')
-        self.assertNotContains(response, 'Tours that visit here')
 
     def test_destination_map_link_can_be_set_by_the_administrator(self):
         self.destination.map_link = 'https://maps.google.com/?cid=123'

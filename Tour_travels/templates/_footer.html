@@ -4,7 +4,7 @@
     <div class="footer-grid">
       {# 1. Company #}
       <div class="footer-col footer-company">
-        <a class="brand footer-brand" href="{% url 'home' %}"><span class="brandmark">R</span><span>{{ site_name|truncatechars:26 }}<small>with a local guide</small></span></a>
+        <a class="brand footer-brand" href="{% url 'home' %}">{% if site.logo %}<img class="brand-logo" src="{{ site.logo_dark_url }}" alt="{{ site_name }} logo">{% else %}<span class="brandmark">{{ site.brand_letter }}</span>{% endif %}<span>{{ site_name|truncatechars:26 }}{% if site.tagline %}<small>{{ site.tagline }}</small>{% endif %}</span></a>
         <p>{{ site.footer_tagline }}</p>
       </div>
 
@@ -107,6 +107,9 @@
     {# 7. Copyright #}
     <div class="footer-bottom">
       <span>© {{ current_year }} {{ site_name }}. All rights reserved.</span>
+      {% if footer_policies %}
+        <span class="footer-policies">{% for slug, title in footer_policies %}<a href="{% url 'policy' slug %}">{{ title }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}</span>
+      {% endif %}
       <span>Made with a love for Rwanda 🇷🇼</span>
     </div>
   </div>

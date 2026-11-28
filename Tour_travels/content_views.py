@@ -14,12 +14,12 @@ from . import notifications
 from .destination_tours import auto_tours_blocking, ensure_destination_tour, remove_auto_tours
 from .forms import (
     AboutSectionForm, CategoryForm, CoHostForm, ContactDetailForm, CultureItemForm, DestinationForm,
-    DetailBookForm, DetailLinkForm, DetailPhotoForm, DetailSectionForm, FAQForm, ReviewAdminForm,
-    SiteSettingsForm, SocialLinkForm, TourPackageForm,
+    DestinationPhotoForm, DetailBookForm, DetailLinkForm, DetailPhotoForm, DetailSectionForm, FAQForm,
+    ReviewAdminForm, SiteSettingsForm, SocialLinkForm, TestimonialForm, TourPackageForm, TourPhotoForm,
 )
 from .models import (
-    FAQ, AboutSection, Category, CoHost, ContactDetail, CultureItem, Destination, DetailBook, DetailLink,
-    DetailPhoto, DetailSection, Review, SiteSettings, SocialLink, TourPackage,
+    FAQ, AboutSection, Category, CoHost, ContactDetail, CultureItem, Destination, DestinationPhoto, DetailBook,
+    DetailLink, DetailPhoto, DetailSection, Review, SiteSettings, SocialLink, Testimonial, TourPackage, TourPhoto,
 )
 from .views import staff_required
 
@@ -38,6 +38,29 @@ SECTIONS = {
         'help': 'Tour packages, prices and details. Unpublished tours are hidden from customers.',
         'columns': [('Title', 'title'), ('Category', 'category'), ('Price (USD)', 'price'),
                     ('Featured', 'is_featured'), ('Published', 'is_active')],
+        'can_add': True,
+    },
+    'destination_photos': {
+        'model': DestinationPhoto, 'form': DestinationPhotoForm, 'title': 'Destination galleries',
+        'singular': 'destination photo',
+        'help': 'Extra photos shown in the gallery on each destination page. The main photo is set on the '
+                'destination itself.',
+        'columns': [('Destination', 'destination'), ('Caption', 'caption'), ('Order', 'order'),
+                    ('Shown', 'is_active')],
+        'can_add': True,
+    },
+    'tour_photos': {
+        'model': TourPhoto, 'form': TourPhotoForm, 'title': 'Tour galleries', 'singular': 'tour photo',
+        'help': 'Extra photos shown in the gallery on each tour page. The main photo is set on the tour itself.',
+        'columns': [('Tour', 'package'), ('Caption', 'caption'), ('Order', 'order'), ('Shown', 'is_active')],
+        'can_add': True,
+    },
+    'testimonials': {
+        'model': Testimonial, 'form': TestimonialForm, 'title': 'Testimonials', 'singular': 'testimonial',
+        'help': 'Quotes from past guests shown on the home page. Tour reviews written by customers are '
+                'managed under Reviews.',
+        'columns': [('Name', 'name'), ('From', 'origin'), ('Rating', 'rating'), ('Order', 'order'),
+                    ('Published', 'is_active')],
         'can_add': True,
     },
     'categories': {

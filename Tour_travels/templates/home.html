@@ -82,6 +82,24 @@
   <div style="margin-top:32px;max-width:800px;color:var(--muted);font-size:.92rem">{{ site.history_note|linebreaksbr }}</div>
 </div></section>
 
+{% if testimonials %}
+<section id="testimonials"><div class="container">
+  <div class="section-head">
+    <span class="kicker">What guests say</span>
+    <h2>Stories from our visitors</h2>
+  </div>
+  <div class="testimonial-grid">
+    {% for item in testimonials %}
+      <figure class="testimonial">
+        <div class="stars" aria-label="{{ item.rating }} out of 5">{% for i in "12345" %}{% if forloop.counter <= item.rating %}★{% else %}☆{% endif %}{% endfor %}</div>
+        <blockquote>“{{ item.quote }}”</blockquote>
+        <figcaption class="who">{% if item.photo %}<img src="{{ item.photo.url }}" alt="" loading="lazy">{% endif %}<span><strong>{{ item.name }}</strong>{% if item.origin %}<br><small>{{ item.origin }}</small>{% endif %}</span></figcaption>
+      </figure>
+    {% endfor %}
+  </div>
+</div></section>
+{% endif %}
+
 <section class="booking" id="booking"{% if backgrounds.booking %} style="background-image:linear-gradient(rgba(241,238,229,.94),rgba(241,238,229,.94)),url('{{ backgrounds.booking }}');background-size:cover;background-position:center"{% endif %}><div class="container booking-wrap">
   <aside class="booking-aside">
     <span class="eyebrow">Start your journey</span>

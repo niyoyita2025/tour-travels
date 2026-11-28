@@ -5,6 +5,7 @@ Sensitive values are read from environment variables. See .env.example.
 """
 
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -81,7 +82,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Sends due booking reminder emails at most every 15 minutes while the site gets visits.
+    'Tour_travels.reminders.ReminderMiddleware',
 ]
+# Off while the test suite runs, so reminders never appear in unrelated tests' mail.
+BOOKING_REMINDERS_ON_VISIT = env_bool('BOOKING_REMINDERS_ON_VISIT', 'test' not in sys.argv)
 
 ROOT_URLCONF = 'Travels.urls'
 
@@ -173,6 +178,9 @@ STORAGES = {
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+# Serve uploaded files from Django when DEBUG is off (Render has no separate file server).
+# Note: on Render's free plan the disk is reset on every deploy, so uploads must be re-added afterwards.
+SERVE_MEDIA = env_bool('DJANGO_SERVE_MEDIA', True)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 

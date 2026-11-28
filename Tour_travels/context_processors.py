@@ -5,6 +5,12 @@ from django.utils import timezone
 from .models import BackgroundImage, CoHost, Destination, SiteSettings, SocialLink, UserProfile
 from .roles import is_admin_user
 
+POLICY_PAGES = {  # slug -> (SiteSettings field, title). The public pages are in website_views.policy_page.
+    'terms': ('terms_text', 'Terms and conditions'),
+    'privacy': ('privacy_text', 'Privacy policy'),
+    'booking-policy': ('booking_policy_text', 'Booking and cancellation policy'),
+}
+
 
 def _initials(name):
     parts = name.split()
@@ -31,6 +37,9 @@ def site_settings(request):
         'footer_destinations': Destination.objects.filter(is_active=True).order_by('-is_featured', 'name')[:4],
         'footer_cohosts': CoHost.objects.filter(is_active=True),
         'footer_hosted': bool(site.hosted_by_name or site.hosted_by_logo),
+        # Policy pages that have text (an empty policy has no page and no link)
+        'footer_policies': [(slug, title) for slug, (field, title) in POLICY_PAGES.items()
+                            if getattr(site, field).strip()],
         # Role information used by templates.
         'is_admin_user': is_admin_user(user),
         'layout': 'base.html',

@@ -1,0 +1,21 @@
+{% extends 'layouts/admin.html' %}
+{% block title %}Policies{% endblock %}
+
+{% block dash %}
+<div class="dash-head">
+  <div>
+    <span class="kicker">Additional management</span>
+    <h1>Terms, privacy and booking policy</h1>
+    <p style="color:var(--muted);margin:6px 0 0">Each policy has its own page, linked from the footer of every page. Leave a policy blank to hide its page and link.</p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    {% for slug, title in pages %}<a class="btn btn-light btn-sm" href="{% url 'policy' slug %}" target="_blank" rel="noopener">{{ title }} ↗</a>{% endfor %}
+  </div>
+</div>
+
+<form class="form-card" method="post" novalidate>
+  {% csrf_token %}
+  <div class="form-grid">{% include '_form_fields.html' %}</div>
+  <div class="form-foot"><button class="btn btn-dark" type="submit">Save policies</button></div>
+</form>
+{% endblock %}

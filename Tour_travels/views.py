@@ -21,7 +21,7 @@ from .forms import (
 )
 from .models import (
     FAQ, ActivityLog, AboutSection, Booking, Category, ContactDetail, CultureItem, Destination, Inquiry,
-    Notification, Payment, Review, TourPackage,
+    Notification, Payment, Review, Testimonial, TourPackage,
 )
 from .bookings import BookingUnavailable, expire_stale_holds, set_booking_status
 from .destination_tours import top_up_dates
@@ -75,6 +75,7 @@ def home(request):
         'destinations': destinations,
         'packages': packages,
         'culture_items': CultureItem.objects.filter(is_active=True),
+        'testimonials': Testimonial.objects.filter(is_active=True)[:6],
         'categories': Category.objects.all(),
         'form': InquiryForm(),
     })
@@ -99,8 +100,14 @@ def destination_list(request):
 
 def destination_detail(request, slug):
     destination = get_object_or_404(Destination, slug=slug, is_active=True)
-    # A destination page describes the place only. Tours are found on the Tours pages.
-    return render(request, 'destination_detail.html', {'destination': destination})
+    # The place first (details, gallery, map), then the published tours that visit it, with prices and
+    # their next open date, each linking to its booking calendar.
+    tours = _with_next_dates(destination.packages.filter(is_active=True).order_by('price', 'title'))
+    return render(request, 'destination_detail.html', {
+        'destination': destination,
+        'photos': destination.photos.filter(is_active=True),
+        'tours': tours,
+    })
 
 
 def _with_next_dates(tours):
@@ -179,6 +186,8 @@ def package_detail(request, slug):
         'open_dates': open_dates,
         'next_date': open_dates[0] if open_dates else None,
         'my_bookings': my_bookings,
+        'photos': package.photos.filter(is_active=True),
+        'rule': getattr(package, 'schedule_rule', None),
     })
 
 

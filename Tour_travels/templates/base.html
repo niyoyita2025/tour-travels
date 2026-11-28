@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="{% block meta_description %}Discover Kigali and experience Rwanda with a friendly local guide. Explore culture, history, markets and beautiful city views.{% endblock %}">
+  <meta name="description" content="{% block meta_description %}{{ site.site_description }}{% endblock %}">
+  {% if site.favicon %}<link rel="icon" href="{{ site.favicon_url }}">{% endif %}
   <meta name="theme-color" content="#123d32">
   <title>{% block title %}{{ site_name }}{% endblock %} | {{ site_name }}</title>
   {# Choose the theme before the page paints, so there is no flash: saved choice, else the device setting. #}
@@ -33,16 +34,18 @@
   <div class="topbar"><div class="container"><span>🇷🇼 Welcome to the Land of a Thousand Hills</span><span>Local experiences · Kigali, Rwanda</span></div></div>
 
   {% block nav %}
-  <nav class="nav" aria-label="Main">
+  <nav class="nav" id="siteNav" aria-label="Main">
     <div class="container navinner">
-      <a class="brand" href="{% url 'home' %}"><span class="brandmark">R</span><span>{{ site_name|truncatechars:24 }}<small>with a local guide</small></span></a>
+      {% include '_brand.html' %}
       <div class="links" id="navLinks">
+        <a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}>Home</a>
         <a href="{% url 'destinations' %}" class="nav-destinations" {% if request.resolver_match.url_name == 'destinations' or request.resolver_match.url_name == 'destination_detail' %}aria-current="page"{% endif %}>Destinations</a>
         <a href="{% url 'packages' %}" class="nav-tours" {% if request.resolver_match.url_name == 'packages' or request.resolver_match.url_name == 'package_detail' or request.resolver_match.url_name == 'tour_calendar' %}aria-current="page"{% endif %}>Tours</a>
         <a href="{% url 'faq' %}" {% if request.resolver_match.url_name == 'faq' %}aria-current="page"{% endif %}>FAQ</a>
         <a href="{% url 'about' %}" {% if request.resolver_match.url_name == 'about' %}aria-current="page"{% endif %}>About</a>
         <a href="{% url 'details' %}" {% if request.resolver_match.url_name == 'details' %}aria-current="page"{% endif %}>Details</a>
         <a href="{% url 'contact' %}" {% if request.resolver_match.url_name == 'contact' %}aria-current="page"{% endif %}>Contact</a>
+        <a class="nav-book" href="{% url 'packages' %}#tour-list">Book Now</a>
         {# Phones hide the header buttons, so the same actions appear in the menu. #}
         <div class="mobile-auth">
           {% if user.is_authenticated %}
