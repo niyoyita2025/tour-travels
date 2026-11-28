@@ -410,8 +410,30 @@ html[data-theme="dark"] .nav.is-scrolled { box-shadow: 0 8px 24px rgba(0, 0, 0, 
 .links a:not(.nav-book):hover::after, .links a[aria-current="page"]::after { transform: scaleX(1); }
 .links .nav-book { background: var(--gold); color: var(--forest); padding: 8px 14px; border-radius: 999px; font-weight: 800; }
 .links .nav-book:hover { filter: brightness(1.05); color: var(--forest); }
-@media (max-width: 1200px) and (min-width: 901px) { .links { gap: 15px; font-size: .86rem; } }
-@media (max-width: 900px) { .links a:not(.nav-book)::after { display: none; } }
+/* Links and header buttons never wrap onto two lines; the gaps shrink on narrower desktops instead. */
+.links a, .nav-actions .btn { white-space: nowrap; }
+.brand-text { max-width: 230px; line-height: 1.2; }
+@media (max-width: 1440px) and (min-width: 901px) {
+  .navinner { gap: 14px; }
+  .links { gap: 16px; font-size: .88rem; }
+  .nav-actions { gap: 8px; }
+  .nav-actions .btn-sm { padding: 8px 12px; }
+}
+@media (max-width: 1200px) and (min-width: 1101px) {
+  .links { gap: 12px; font-size: .84rem; }
+  .brand-text { max-width: 170px; }
+  .links .nav-book { padding: 7px 11px; }
+}
+/* Small laptops and large tablets: the full row no longer fits, so the menu button takes over (as on phones). */
+@media (max-width: 1100px) {
+  .links { display: none; position: absolute; top: 76px; left: 0; right: 0; background: var(--cream); padding: 18px 22px 23px; box-shadow: 0 15px 25px rgba(0, 0, 0, .08); flex-direction: column; align-items: flex-start; gap: 15px; }
+  .links.open { display: flex; }
+  .menu { display: block; }
+  .nav-actions .btn-dark { display: none; }
+  .mobile-auth { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 4px; }
+  html[data-theme="dark"] .links { background: #0e1714; }
+}
+@media (max-width: 1100px) { .links a:not(.nav-book)::after { display: none; } }
 @media (prefers-reduced-motion: reduce) { .nav, .links a, .links a::after { transition: none; } }
 /* Jump links land below the fixed header instead of under it */
 html { scroll-padding-top: 90px; }
