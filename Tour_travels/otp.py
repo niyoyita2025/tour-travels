@@ -177,11 +177,44 @@ def _send_code_email(message):
     send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [message.to], fail_silently=False, html_message=html)
 
 
+def _describe_brevo_error(error):
+    """A plain reason for a Brevo API refusal, or '' for other errors. Never includes the API key."""
+    import re
+
+    try:
+        from anymail.exceptions import AnymailError
+    except ImportError:  # anymail not installed: Brevo is not in use
+        return ''
+    if not isinstance(error, AnymailError):
+        return ''
+    status = getattr(error, 'status_code', None)
+    detail = ''
+    response = getattr(error, 'response', None)
+    if response is not None:
+        try:
+            detail = str(response.json().get('message', ''))
+        except ValueError:
+            detail = ''
+    detail = re.sub(r'xkeysib-[\w-]+', '[key hidden]', detail or str(error).splitlines()[0])[:160]
+    if status == 401:
+        hint = ('Brevo rejected the API key. Check BREVO_API_KEY, and under Brevo > SMTP & API > Authorised IPs '
+                'either allow the server or turn IP blocking off.')
+    elif status == 400 and 'sender' in detail.lower():
+        hint = (f'Brevo refused the sender {settings.DEFAULT_FROM_EMAIL!r}. Verify that address in Brevo > '
+                'Senders, Domains & IPs > Senders.')
+    else:
+        hint = 'Brevo did not accept the message.'
+    return f'{hint} (Brevo{" " + str(status) if status else ""}: {detail})'
+
+
 def describe_email_error(error):
     """A plain explanation of why an email was not sent, for logs and the send_test_email command."""
     import smtplib
     import socket
 
+    brevo_reason = _describe_brevo_error(error)
+    if brevo_reason:
+        return brevo_reason
     if settings.EMAIL_BACKEND.endswith('smtp.EmailBackend') and not settings.EMAIL_HOST_PASSWORD:
         return ('EMAIL_HOST_PASSWORD is empty. Gmail refuses to send without the 16-character '
                 'Google app password for EMAIL_HOST_USER.')

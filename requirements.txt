@@ -5,6 +5,8 @@ Pillow>=11.0
 # Argon2 password hashing (settings.PASSWORD_HASHERS).
 argon2-cffi>=23.1
 whitenoise>=6.6
+# Email through Brevo's API when BREVO_API_KEY is set (settings.py); Gmail SMTP otherwise.
+django-anymail[brevo]>=12,<14
 # Database: PostgreSQL in production (DATABASE_URL), read by settings.py
 dj-database-url>=3.0
 psycopg[binary]>=3.2,<4

@@ -84,7 +84,10 @@ def policy_page(request, slug):
 def gmail_status():
     """What the Email centre shows about the mail setup. Never includes the password itself."""
     smtp = settings.EMAIL_BACKEND == SMTP_BACKEND
+    brevo = getattr(settings, 'EMAIL_PROVIDER', '') == 'brevo'
     return {
+        'brevo': brevo,
+        'brevo_key_set': bool(getattr(settings, 'BREVO_API_KEY', '')),  # yes or no only, never the key
         'smtp': smtp,
         'backend': settings.EMAIL_BACKEND.rsplit('.', 2)[-2],
         'host': f'{settings.EMAIL_HOST}:{settings.EMAIL_PORT}',
@@ -92,7 +95,7 @@ def gmail_status():
         'user': settings.EMAIL_HOST_USER,
         'password_set': bool(settings.EMAIL_HOST_PASSWORD),
         'sender': settings.DEFAULT_FROM_EMAIL,
-        'ready': (not smtp) or bool(settings.EMAIL_HOST_USER and settings.EMAIL_HOST_PASSWORD),
+        'ready': brevo or (not smtp) or bool(settings.EMAIL_HOST_USER and settings.EMAIL_HOST_PASSWORD),
     }
 
 

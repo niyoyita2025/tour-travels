@@ -41,3 +41,9 @@ services:
         sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
+      # Brevo: when BREVO_API_KEY is set, all email goes through Brevo from BREVO_SENDER_EMAIL instead of Gmail.
+      # Paste the key in the Render Environment tab; it is never stored in this file or in GitHub.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        value: niyoyitarobert1@gmail.com

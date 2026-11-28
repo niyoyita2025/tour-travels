@@ -203,6 +203,20 @@ EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '20'))  # seconds before a s
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') or (
     f'Explore Rwanda <{EMAIL_HOST_USER}>' if EMAIL_HOST_USER else 'Explore Rwanda <noreply@example.com>'
 )
+
+# Brevo (brevo.com). When BREVO_API_KEY is set, every email (codes, bookings, reminders, staff alerts) is sent
+# through Brevo's HTTPS API instead of Gmail SMTP, from BREVO_SENDER_EMAIL. The key is read from the environment
+# only: put it in .env locally and in the Render Environment tab, never in the code. The sender address must be
+# verified in Brevo (Senders, Domains & IPs > Senders). DJANGO_EMAIL_BACKEND=console still wins for local testing.
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '').strip()
+BREVO_SENDER_EMAIL = os.environ.get('BREVO_SENDER_EMAIL', 'niyoyitarobert1@gmail.com').strip()
+BREVO_SENDER_NAME = os.environ.get('BREVO_SENDER_NAME', 'Explore Rwanda').strip()
+ANYMAIL = {'BREVO_API_KEY': BREVO_API_KEY}
+if BREVO_API_KEY and not EMAIL_BACKEND.endswith('console.EmailBackend'):
+    EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+    DEFAULT_FROM_EMAIL = f'{BREVO_SENDER_NAME} <{BREVO_SENDER_EMAIL}>'
+EMAIL_PROVIDER = 'brevo' if EMAIL_BACKEND.startswith('anymail.backends.brevo') else (
+    'gmail' if EMAIL_BACKEND.endswith('smtp.EmailBackend') else 'none')
 SITE_NAME = 'Explore Rwanda with a Local Guide'
 SITE_URL = os.environ.get('SITE_URL') or os.environ.get('RENDER_EXTERNAL_URL') or 'http://127.0.0.1:8000'
 

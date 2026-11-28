@@ -13,6 +13,19 @@
 
 <div class="layout-2">
   <section class="panel">
+    {% if gmail.brevo %}
+    <h2>Brevo connection</h2>
+    <p class="notice">Emails are sent through Brevo. A test email proves Brevo accepts the key and the sender.</p>
+    <div class="table-wrap"><table>
+      <tbody>
+        <tr><th>Email service</th><td>Brevo (HTTPS API)</td></tr>
+        <tr><th>API key</th><td>{% if gmail.brevo_key_set %}set (hidden){% else %}<strong>not set</strong>{% endif %}</td></tr>
+        <tr><th>Sender shown to customers</th><td>{{ gmail.sender }}</td></tr>
+        <tr><th>Sent / failed (all time)</th><td>{{ sent_count }} / {{ failed_count }}</td></tr>
+      </tbody>
+    </table></div>
+    <p class="help" style="margin-top:10px">The sender must be verified in Brevo under Senders, Domains &amp; IPs. The key lives only in the server's environment settings (BREVO_API_KEY) and is never shown here.</p>
+    {% else %}
     <h2>Gmail connection</h2>
     {% if gmail.ready %}
       <p class="notice">Email is configured. A test email proves Gmail accepts the sign-in.</p>
@@ -30,6 +43,7 @@
       </tbody>
     </table></div>
     <p class="help" style="margin-top:10px">Passwords are never shown or stored here. They live only in the server's environment settings.</p>
+    {% endif %}
   </section>
 
   <form class="form-card" method="post" novalidate>
